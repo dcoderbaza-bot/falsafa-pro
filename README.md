@@ -31,7 +31,11 @@
   * Har bir xato savoldan to‘g‘ridan-to‘g‘ri tegishli ma’ruza slaydiga o‘tish imkoniyati.
 * **Chop etish va Word hujjat:** Barcha 15 variant + Umumiy javoblar kaliti (`Falsafa_Oraliq_Nazorat_15_Variant.docx`).
 
-### 3. Mukammal Akademik Lug‘at va Flesh-Kartochka Studiyasi — 160 ta Fundamental Atama (M1–M8 × 20)
+### 3. Rasmiy 200 Savollik Test Bazasi (Alohida Bo‘lim)
+* Rasmiy PDF to‘plamdagi barcha **200 ta savol (`#1–#200`)** to‘liq kiritilgan: **8 ta 25-savollik blok**, takrorlarsiz **70 ta noyob asosiy savol** rejimi, **Tasodifiy 25 talik imtihon** va **To‘liq 200 savollik marafon**.
+* Barcha interaktiv funksiyalar bilan: tezkor to‘g‘ri/noto‘g‘ri tekshiruv + Professor izohi, qat’iy imtihon rejimi, alohida **Xatolar ustida ishlash** banki, qidiruvli **200 savol va kalitlar ko‘ruvchisi**, slaydga o‘tish havolalari va **Chop etish / PDF**.
+
+### 4. Mukammal Akademik Lug‘at va Flesh-Kartochka Studiyasi — 160 ta Fundamental Atama (M1–M8 × 20)
 * Har bir mavzudan **20 tadan (jami 160 ta)** fundamental falsafiy atama: **etimologiya** (kelib chiqishi), **asosiy mutafakkirlar**, **chuqur akademik ta’rif**, **hayotiy/IT misoli** va **tegishli slayd havolasi** bilan.
 * **Kengaytirilgan qidiruv va filtrlash:** Mavzu chiplari (`M1–M8`), `A–Z` alifbo paneli, tartiblash (`Mavzu bo‘yicha`, `A–Z`, `Avval yodlanmaganlar`) va jonli izlash (atama, etimologiya, faylasuf yoki misol bo‘yicha).
 * **🃏 Interaktiv Flesh-kartochka rejimi:** Faol eslab qolish (active recall), kartalarni aralashtirish (`🔀`), **“✓ Yodladim”** progressini brauzerda saqlash, klaviatura boshqaruvi (`Space` / `←` / `→` / `Enter`) hamda **Lug‘atni chop etish / PDF** funksiyasi.
@@ -50,6 +54,7 @@
 │   ├── tests_1_5.js                         # 1–5-variantlar (125 ta noyob savol)
 │   ├── tests_6_10.js                        # 6–10-variantlar (125 ta noyob savol)
 │   ├── tests_11_15.js                       # 11–15-variantlar (125 ta noyob savol)
-│   └── app.js                               # Taqdimot, imtihon va xatolar banki mexanizmi
+│   ├── pdf_bank_200.js                      # Rasmiy PDF 200 savollik test bazasi (1–200)
+│   └── app.js                               # Taqdimot, imtihon, 200-baza, xatolar banki va lug‘at mexanizmi
 └── Falsafa_Oraliq_Nazorat_15_Variant.docx   # Chop etishga tayyor rasmiy Word test to‘plami
 ```

@@ -21,12 +21,24 @@ const App = (() => {
   const STORAGE_KEY_MISTAKES = "falsafa_fal1404_mistakes_v1";
   const STORAGE_KEY_MASTERED = "falsafa_fal1404_mastered_v1";
   const STORAGE_KEY_GLOSS_LEARNED = "falsafa_fal1404_gloss_learned_v1";
+  const STORAGE_KEY_B200_SCORES = "falsafa_fal1404_b200_scores_v1";
+  const STORAGE_KEY_B200_MISTAKES = "falsafa_fal1404_b200_mistakes_v1";
+  const STORAGE_KEY_B200_MASTERED = "falsafa_fal1404_b200_mastered_v1";
 
   let slides = [];
   let modules = [];
   let moduleMap = {};
   let variants = [];
   let glossary = [];
+  let bank200 = [];
+
+  // Bank 200 state
+  let activeRunnerSource = "exam"; // 'exam' | 'bank200'
+  let bank200Tab = "blocks"; // 'blocks' | 'browse'
+  let bank200Scores = {};
+  let bank200Mistakes = {}; // { "q14": { qId, m, lastWrong, wrongCount } }
+  let bank200Mastered = 0;
+  let lastBank200Launch = null; // { type: 'block'|'special', key }
 
   // Glossary state
   let glossaryViewMode = "list"; // 'list' | 'cards'
@@ -75,6 +87,7 @@ const App = (() => {
       ...(window.EXAM_VARIANTS_11_15 || [])
     ];
     glossary = (window.FALSAFA_GLOSSARY || []).map((item, idx) => ({ ...item, _idx: idx }));
+    bank200 = window.PDF_TEST_BANK_200 || [];
 
     // Restore persisted state
     try {
@@ -88,6 +101,12 @@ const App = (() => {
       if (!isNaN(mc) && mc >= 0) masteredCount = mc;
       const gl = localStorage.getItem(STORAGE_KEY_GLOSS_LEARNED);
       if (gl) glossaryLearnedSet = new Set(JSON.parse(gl));
+      const b2s = localStorage.getItem(STORAGE_KEY_B200_SCORES);
+      if (b2s) bank200Scores = JSON.parse(b2s);
+      const b2m = localStorage.getItem(STORAGE_KEY_B200_MISTAKES);
+      if (b2m) bank200Mistakes = JSON.parse(b2m);
+      const b2c = parseInt(localStorage.getItem(STORAGE_KEY_B200_MASTERED), 10);
+      if (!isNaN(b2c) && b2c >= 0) bank200Mastered = b2c;
       const lastSlide = parseInt(localStorage.getItem(STORAGE_KEY_SLIDE), 10);
       if (!isNaN(lastSlide) && lastSlide >= 0 && lastSlide < slides.length) {
         currentSlideIdx = lastSlide;
@@ -98,11 +117,14 @@ const App = (() => {
     document.getElementById("total-slide-num").textContent = slides.length;
     const navGloss = document.getElementById("nav-glossary-count");
     if (navGloss) navGloss.textContent = glossary.length;
+    const navB200 = document.getElementById("nav-bank200-count");
+    if (navB200) navB200.textContent = bank200.length;
 
     renderSidebarModules();
     renderSlide();
     renderMistakesHub();
     renderVariantsDashboard();
+    renderBank200Dashboard();
     renderGlossary();
     bindKeyboard();
   }
@@ -184,9 +206,11 @@ const App = (() => {
     if (target) target.classList.add("active");
     const btn = document.querySelector(`.nav-tab[data-view="${viewName}"]`);
     if (btn) btn.classList.add("active");
-    if (viewName === "exam" && !activeVariant) {
+    if (viewName === "exam" && (!activeVariant || activeRunnerSource !== "exam")) {
       renderMistakesHub();
       renderVariantsDashboard();
+    } else if (viewName === "bank200" && (!activeVariant || activeRunnerSource !== "bank200")) {
+      renderBank200Dashboard();
     } else if (viewName === "glossary") {
       renderGlossary();
     }
@@ -473,7 +497,10 @@ const App = (() => {
     const list = getMistakeList("ALL");
     const body = document.getElementById("mistakes-modal-body");
     const startBtn = document.getElementById("btn-modal-start-mistakes");
-    if (startBtn) startBtn.style.display = list.length ? "inline-flex" : "none";
+    if (startBtn) {
+      startBtn.style.display = list.length ? "inline-flex" : "none";
+      startBtn.onclick = () => { closeMistakesModal(); startMistakeDrill("ALL"); };
+    }
 
     if (!list.length) {
       body.innerHTML = `<div class="search-empty">Xatolar banki bo‘sh — barcha savollar o‘zlashtirilgan! 🎉</div>`;
@@ -521,6 +548,30 @@ const App = (() => {
     renderVariantsDashboard();
   }
 
+  function mountRunnerTo(source) {
+    activeRunnerSource = source === "bank200" ? "bank200" : "exam";
+    const runner = document.getElementById("exam-runner");
+    const results = document.getElementById("exam-results");
+    const hostId = activeRunnerSource === "bank200" ? "bank200-runner-host" : "exam-runner-host";
+    const host = document.getElementById(hostId);
+    if (host && runner && results) {
+      host.appendChild(runner);
+      host.appendChild(results);
+    }
+    const exitBtn = document.getElementById("runner-exit-btn");
+    if (exitBtn) {
+      exitBtn.textContent = activeRunnerSource === "bank200" ? "← Rasmiy Bazaga qaytish" : "← Variantlarga qaytish";
+    }
+    // Restore the other section's dashboard if it was hidden
+    if (activeRunnerSource === "bank200") {
+      const ed = document.getElementById("exam-dashboard");
+      if (ed) ed.style.display = "block";
+    } else {
+      const bd = document.getElementById("bank200-dashboard");
+      if (bd) bd.style.display = "block";
+    }
+  }
+
   function startMistakeDrill(filterMod = "ALL", filterVariantId = null) {
     const list = getMistakeList(filterMod, filterVariantId);
     if (!list.length) {
@@ -540,6 +591,7 @@ const App = (() => {
       };
     });
 
+    mountRunnerTo("exam");
     isMistakeSession = true;
     mistakeSessionFixedCount = 0;
     mistakeSessionSourceLabel = filterVariantId !== null
@@ -579,16 +631,21 @@ const App = (() => {
   /* ==================== ORALIQ NAZORAT (EXAM CENTER) ==================== */
   function setExamMode(mode) {
     examMode = mode === "strict" ? "strict" : "instant";
-    const btnInstant = document.getElementById("mode-btn-instant");
-    const btnStrict = document.getElementById("mode-btn-strict");
-    if (btnInstant) btnInstant.classList.toggle("active", examMode === "instant");
-    if (btnStrict) btnStrict.classList.toggle("active", examMode === "strict");
-    const desc = document.getElementById("mode-desc-text");
-    if (desc) {
-      desc.textContent = examMode === "instant"
-        ? "Tezkor tekshiruv rejimi — kalitni belgilaganingizda to‘g‘ri/noto‘g‘riligi va Professor ko‘rsatmasi darhol chiqadi (30 daq taymer bilan)."
-        : "Qat’iy imtihon rejimi — 30 daqiqalik taymer; barcha javoblar, natija va ko‘rsatmalar test yakunlangandan so‘ng ochiladi.";
-    }
+    const pairs = [
+      ["mode-btn-instant", "mode-btn-strict", "mode-desc-text"],
+      ["b200-mode-btn-instant", "b200-mode-btn-strict", "bank200-mode-desc"]
+    ];
+    const msg = examMode === "instant"
+      ? "Tezkor tekshiruv rejimi — kalitni belgilaganingizda to‘g‘ri/noto‘g‘riligi va Professor ko‘rsatmasi darhol chiqadi."
+      : "Qat’iy imtihon rejimi — taymer bilan; barcha javoblar, natija va ko‘rsatmalar test yakunlangandan so‘ng ochiladi.";
+    pairs.forEach(([instId, strId, descId]) => {
+      const bi = document.getElementById(instId);
+      const bs = document.getElementById(strId);
+      const ds = document.getElementById(descId);
+      if (bi) bi.classList.toggle("active", examMode === "instant");
+      if (bs) bs.classList.toggle("active", examMode === "strict");
+      if (ds) ds.textContent = msg;
+    });
   }
 
   function calcGrade(score, total = 25) {
@@ -644,6 +701,7 @@ const App = (() => {
     activeVariant = variants.find(v => v.id === variantId);
     if (!activeVariant) return;
 
+    mountRunnerTo("exam");
     isMistakeSession = false;
     mistakeSessionFixedCount = 0;
     currentQIdx = 0;
@@ -709,8 +767,12 @@ const App = (() => {
     const instantFeedbackMode = isMistakeSession || examMode === "instant";
 
     document.getElementById("q-num-badge").textContent = isMistakeSession
-      ? `${currentQIdx + 1} / ${activeVariant.questions.length} • ${q._vTitle} (#${q._qIdx + 1})`
-      : `${currentQIdx + 1}-savol / ${activeVariant.questions.length}`;
+      ? (activeRunnerSource === "bank200"
+        ? `${currentQIdx + 1} / ${activeVariant.questions.length} • Rasmiy Baza (#${q.id})`
+        : `${currentQIdx + 1} / ${activeVariant.questions.length} • ${q._vTitle} (#${q._qIdx + 1})`)
+      : (activeRunnerSource === "bank200" && q.id
+        ? `${currentQIdx + 1}-savol / ${activeVariant.questions.length} • PDF #${q.id}`
+        : `${currentQIdx + 1}-savol / ${activeVariant.questions.length}`);
     document.getElementById("q-topic-badge").textContent = `${mod.code}: ${mod.title}`;
     document.getElementById("q-text").textContent = q.q;
 
@@ -788,7 +850,9 @@ const App = (() => {
         </div>
         <div class="mistake-prev-note">
           <span>${bankNote}</span>
-          <button class="gloss-link" onclick="App.jumpToModuleSlide('${q.m}')">📖 ${q.m} slaydlarini ko‘rish →</button>
+          ${q.slide
+            ? `<button class="gloss-link" onclick="App.switchView('slides'); App.goToSlide(${q.slide - 1});">📖 ${q.slide}-slaydni ko‘rish (${q.m}) →</button>`
+            : `<button class="gloss-link" onclick="App.jumpToModuleSlide('${q.m}')">📖 ${q.m} slaydlarini ko‘rish →</button>`}
         </div>
       `;
     } else {
@@ -853,7 +917,21 @@ const App = (() => {
     userAnswers[currentQIdx] = optIdx;
 
     const q = activeVariant.questions[currentQIdx];
-    if (isMistakeSession) {
+    if (activeRunnerSource === "bank200") {
+      if (isMistakeSession) {
+        if (optIdx === q.ans) {
+          if (markBank200MistakeMastered(q.id)) mistakeSessionFixedCount++;
+        } else {
+          recordBank200Mistake(q.id, q.m, optIdx);
+        }
+      } else if (examMode === "instant") {
+        if (optIdx === q.ans) {
+          markBank200MistakeMastered(q.id);
+        } else {
+          recordBank200Mistake(q.id, q.m, optIdx);
+        }
+      }
+    } else if (isMistakeSession) {
       if (optIdx === q.ans) {
         if (markMistakeMastered(q._vId, q._qIdx)) {
           mistakeSessionFixedCount++;
@@ -895,7 +973,7 @@ const App = (() => {
   function confirmExitExam() {
     if (!examFinished) {
       const answeredCount = userAnswers.filter(x => x !== null).length;
-      if (answeredCount > 0 && !confirm("Mashg‘ulot hali yakunlanmadi. Chiqib variantlar ro‘yxatiga qaytmoqchimisiz?")) {
+      if (answeredCount > 0 && !confirm("Mashg‘ulot hali yakunlanmadi. Chiqib asosiy ro‘yxatga qaytmoqchimisiz?")) {
         return;
       }
     }
@@ -904,9 +982,14 @@ const App = (() => {
     isMistakeSession = false;
     document.getElementById("exam-runner").style.display = "none";
     document.getElementById("exam-results").style.display = "none";
-    document.getElementById("exam-dashboard").style.display = "block";
-    renderMistakesHub();
-    renderVariantsDashboard();
+    if (activeRunnerSource === "bank200") {
+      document.getElementById("bank200-dashboard").style.display = "block";
+      renderBank200Dashboard();
+    } else {
+      document.getElementById("exam-dashboard").style.display = "block";
+      renderMistakesHub();
+      renderVariantsDashboard();
+    }
   }
 
   function finishExam(autoTimeout = false) {
@@ -935,11 +1018,13 @@ const App = (() => {
         score++;
         topicStats[q.m].right++;
         if (!isMistakeSession && examMode === "strict") {
-          markMistakeMastered(activeVariant.id, idx);
+          if (activeRunnerSource === "bank200") markBank200MistakeMastered(q.id);
+          else markMistakeMastered(activeVariant.id, idx);
         }
       } else {
         if (!isMistakeSession && (examMode === "strict" || ua === null)) {
-          recordMistake(activeVariant.id, idx, q.m, ua);
+          if (activeRunnerSource === "bank200") recordBank200Mistake(q.id, q.m, ua);
+          else recordMistake(activeVariant.id, idx, q.m, ua);
         }
       }
     });
@@ -948,12 +1033,24 @@ const App = (() => {
     const wrongCount = totalQs - score;
 
     if (!isMistakeSession) {
-      const prev = savedScores[activeVariant.id];
-      savedScores[activeVariant.id] = {
-        best: prev ? Math.max(prev.best, score) : score,
-        last: score
-      };
-      try { localStorage.setItem(STORAGE_KEY_SCORES, JSON.stringify(savedScores)); } catch (_) {}
+      if (activeRunnerSource === "bank200") {
+        if (activeVariant._scoreKey) {
+          const prev = bank200Scores[activeVariant._scoreKey];
+          bank200Scores[activeVariant._scoreKey] = {
+            best: prev ? Math.max(prev.best, score) : score,
+            last: score,
+            total: totalQs
+          };
+          try { localStorage.setItem(STORAGE_KEY_B200_SCORES, JSON.stringify(bank200Scores)); } catch (_) {}
+        }
+      } else {
+        const prev = savedScores[activeVariant.id];
+        savedScores[activeVariant.id] = {
+          best: prev ? Math.max(prev.best, score) : score,
+          last: score
+        };
+        try { localStorage.setItem(STORAGE_KEY_SCORES, JSON.stringify(savedScores)); } catch (_) {}
+      }
     }
 
     document.getElementById("exam-runner").style.display = "none";
@@ -982,8 +1079,15 @@ const App = (() => {
       const isOk = ua === q.ans;
       const uaText = ua === null ? "<em>Belgilanmagan</em>" : `<strong>${LETTERS[ua]}.</strong> ${q.opts[ua]}`;
       const labelHead = isMistakeSession
-        ? `${idx + 1}-savol • ${q._vTitle} (#${q._qIdx + 1}) • ${q.m}`
-        : `${idx + 1}-savol • ${q.m}`;
+        ? (activeRunnerSource === "bank200"
+          ? `${idx + 1}-savol • Rasmiy Baza (#${q.id}) • ${q.m}`
+          : `${idx + 1}-savol • ${q._vTitle} (#${q._qIdx + 1}) • ${q.m}`)
+        : (activeRunnerSource === "bank200" && q.id
+          ? `${idx + 1}-savol (PDF #${q.id}) • ${q.m}`
+          : `${idx + 1}-savol • ${q.m}`);
+      const slideJumpBtn = q.slide
+        ? `<button class="gloss-link" onclick="App.switchView('slides'); App.goToSlide(${q.slide - 1});">📖 ${q.slide}-slaydni takrorlash (${q.m}) →</button>`
+        : `<button class="gloss-link" onclick="App.jumpToModuleSlide('${q.m}')">📖 ${q.m} mavzu slaydlarini takrorlash →</button>`;
       return `
         <div class="review-item ${isOk ? "r-ok" : "r-bad"}">
           <div class="review-q-head">
@@ -997,15 +1101,23 @@ const App = (() => {
           ${!isOk ? `<div class="review-ans-line" style="color:var(--success)">To‘g‘ri javob: <strong>${LETTERS[q.ans]}.</strong> ${q.opts[q.ans]}</div>` : ""}
           <div class="review-exp">
             <strong>Professor izohi:</strong> ${q.exp}
-            ${!isOk ? `<div style="margin-top:6px;"><button class="gloss-link" onclick="App.jumpToModuleSlide('${q.m}')">📖 ${q.m} mavzu slaydlarini takrorlash →</button></div>` : ""}
+            ${!isOk ? `<div style="margin-top:6px;">${slideJumpBtn}</div>` : ""}
           </div>
         </div>
       `;
     }).join("");
 
     if (isMistakeSession) {
-      const remainingInFilter = getMistakeList(activeVariant._filterMod, activeVariant._filterVariantId).length;
-      const remainingAll = getMistakeList("ALL").length;
+      const remainingInFilter = activeRunnerSource === "bank200"
+        ? getBank200MistakeList().length
+        : getMistakeList(activeVariant._filterMod, activeVariant._filterVariantId).length;
+      const remainingAll = activeRunnerSource === "bank200"
+        ? remainingInFilter
+        : getMistakeList("ALL").length;
+      const retryMistakeAction = activeRunnerSource === "bank200"
+        ? `App.startBank200MistakeDrill()`
+        : `App.startMistakeDrill('${activeVariant._filterMod}', ${activeVariant._filterVariantId})`;
+      const backLabel = activeRunnerSource === "bank200" ? "Rasmiy Bazaga qaytish" : "Variantlar markaziga qaytish";
       resEl.innerHTML = `
         <div class="results-summary-card">
           <div class="res-top">
@@ -1027,8 +1139,8 @@ const App = (() => {
               </div>
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
-              ${remainingInFilter > 0 ? `<button class="btn-danger-cta" onclick="App.startMistakeDrill('${activeVariant._filterMod}', ${activeVariant._filterVariantId})">🔁 Qolgan xatolarni qayta ishlash (${remainingInFilter} ta)</button>` : ""}
-              <button class="btn-gold small" onclick="App.confirmExitExam()">Variantlar markaziga qaytish</button>
+              ${remainingInFilter > 0 ? `<button class="btn-danger-cta" onclick="${retryMistakeAction}">🔁 Qolgan xatolarni qayta ishlash (${remainingInFilter} ta)</button>` : ""}
+              <button class="btn-gold small" onclick="App.confirmExitExam()">${backLabel}</button>
             </div>
           </div>
           <h4 style="margin:18px 0 4px;font-size:14.5px;">Mavzular bo‘yicha tuzatish ko‘rsatkichi:</h4>
@@ -1038,39 +1150,49 @@ const App = (() => {
         <div class="review-list">${reviewHtml}</div>
       `;
     } else {
-      const variantRemainingMistakes = getMistakeList("ALL", activeVariant.id).length;
+      const isB200 = activeRunnerSource === "bank200";
+      const remainingMistakes = isB200
+        ? getBank200MistakeList().length
+        : getMistakeList("ALL", activeVariant.id).length;
+      const drillBtnHtml = remainingMistakes > 0
+        ? (isB200
+          ? `<button class="btn-danger-cta" onclick="App.startBank200MistakeDrill()">🛠 Xatolar ustida ishlash (${remainingMistakes} ta)</button>`
+          : `<button class="btn-danger-cta" onclick="App.startMistakeDrill('ALL', ${activeVariant.id})">🛠 Shu variantdagi xatolar ustida ishlash (${remainingMistakes} ta)</button>`)
+        : "";
+      const retryAction = isB200 ? `App.retryActiveBank200()` : `App.startVariant(${activeVariant.id})`;
+      const backLabel = isB200 ? "Rasmiy Bazaga qaytish" : "Barcha variantlarga qaytish";
       resEl.innerHTML = `
         <div class="results-summary-card">
           <div class="res-top">
             <div style="display:flex;align-items:center;gap:22px;flex-wrap:wrap;">
               <div class="res-score-circle ${g.cls}">
-                <strong>${score}/25</strong>
+                <strong>${score}/${totalQs}</strong>
                 <span>${g.pct}%</span>
               </div>
               <div>
-                <div class="hero-kicker" style="color:var(--accent-gold);">${activeVariant.title.toUpperCase()} • ORALIQ NAZORAT NATIJASI</div>
+                <div class="hero-kicker" style="color:var(--accent-gold);">${activeVariant.title.toUpperCase()} • ${isB200 ? "RASMIY 200 BAZA NATIJASI" : "ORALIQ NAZORAT NATIJASI"}</div>
                 <h2 style="font-family:var(--font-serif);font-size:32px;margin:2px 0 6px;">Baho: ${g.label}</h2>
                 <p style="margin:0;color:var(--ink-secondary);max-width:520px;">
                   ${g.passed
                     ? (wrongCount === 0
-                      ? "Mukammal 25/25! Birorta ham xato qilmadingiz — professor sifatida tabriklayman!"
-                      : `Ajoyib natija! O‘tish chegarasidan (15 ball) o‘tdingiz. Adashgan ${wrongCount} ta savolingiz avtomatik Xatolar Bankiga saqlandi.`)
-                    : `O‘tish chegarasi — 15 ball (60%). Adashgan ${wrongCount} ta savolingiz Xatolar Bankiga saqlandi — ularni darhol qayta ishlab mustahkamlang!`}
+                      ? `Mukammal ${score}/${totalQs}! Birorta ham xato qilmadingiz — professor sifatida tabriklayman!`
+                      : `Ajoyib natija (${g.pct}%)! O‘tish chegarasidan (60%) o‘tdingiz. Adashgan ${wrongCount} ta savolingiz avtomatik Xatolar Bankiga saqlandi.`)
+                    : `O‘tish chegarasi — 60%. Adashgan ${wrongCount} ta savolingiz Xatolar Bankiga saqlandi — ularni darhol qayta ishlab mustahkamlang!`}
                 </p>
               </div>
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
-              ${variantRemainingMistakes > 0 ? `<button class="btn-danger-cta" onclick="App.startMistakeDrill('ALL', ${activeVariant.id})">🛠 Shu variantdagi xatolar ustida ishlash (${variantRemainingMistakes} ta)</button>` : ""}
-              <button class="ctrl-btn" onclick="App.startVariant(${activeVariant.id})">↻ Qayta topshirish</button>
-              <button class="btn-gold small" onclick="App.confirmExitExam()">Barcha variantlarga qaytish</button>
+              ${drillBtnHtml}
+              <button class="ctrl-btn" onclick="${retryAction}">↻ Qayta topshirish</button>
+              <button class="btn-gold small" onclick="App.confirmExitExam()">${backLabel}</button>
             </div>
           </div>
 
-          <h4 style="margin:18px 0 4px;font-size:14.5px;">Mavzular (M1–M8) bo‘yicha o‘zlashtirish tahlili:</h4>
+          <h4 style="margin:18px 0 4px;font-size:14.5px;">Mavzular bo‘yicha o‘zlashtirish tahlili:</h4>
           <div class="topic-analytics-grid">${analyticsHtml}</div>
         </div>
 
-        <h3 style="font-family:var(--font-serif);font-size:26px;margin:0 0 14px;">Barcha 25 savol bo‘yicha batafsil tahlil va professor izohlari</h3>
+        <h3 style="font-family:var(--font-serif);font-size:26px;margin:0 0 14px;">Barcha ${totalQs} savol bo‘yicha batafsil tahlil va professor izohlari</h3>
         <div class="review-list">${reviewHtml}</div>
       `;
     }
@@ -1102,6 +1224,494 @@ const App = (() => {
       rows += `</tr>`;
     }
     return `<div style="overflow-x:auto;"><table class="keys-table"><thead><tr>${headerCols}</tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+
+  /* ==================== RASMIY 200 SAVOLLIK TEST BAZASI (PDF TO‘PLAM) ==================== */
+  function persistBank200Mistakes() {
+    try {
+      localStorage.setItem(STORAGE_KEY_B200_MISTAKES, JSON.stringify(bank200Mistakes));
+      localStorage.setItem(STORAGE_KEY_B200_MASTERED, String(bank200Mastered));
+    } catch (_) {}
+  }
+
+  function recordBank200Mistake(qId, mod, wrongChoice) {
+    const key = `q${qId}`;
+    const prev = bank200Mistakes[key];
+    bank200Mistakes[key] = {
+      key,
+      qId,
+      m: mod,
+      lastWrong: wrongChoice,
+      wrongCount: prev ? prev.wrongCount + 1 : 1
+    };
+    persistBank200Mistakes();
+  }
+
+  function markBank200MistakeMastered(qId) {
+    const key = `q${qId}`;
+    if (bank200Mistakes[key]) {
+      delete bank200Mistakes[key];
+      bank200Mastered++;
+      persistBank200Mistakes();
+      return true;
+    }
+    return false;
+  }
+
+  function getBank200MistakeList() {
+    return Object.values(bank200Mistakes)
+      .filter(it => bank200[it.qId - 1])
+      .sort((a, b) => a.qId - b.qId);
+  }
+
+  function renderBank200MistakesHub() {
+    const panel = document.getElementById("bank200-mistakes-hub");
+    if (!panel) return;
+    const list = getBank200MistakeList();
+    const total = list.length;
+
+    if (total === 0) {
+      panel.className = "mistakes-hub-panel all-clear";
+      panel.innerHTML = `
+        <div class="mh-top">
+          <div>
+            <div class="mh-title-row">
+              <h3>🛠 Xatolar ustida ishlash — Rasmiy 200 Baza</h3>
+              <span class="mh-badge ok">0 ta faol xato</span>
+              ${bank200Mastered > 0 ? `<span class="mh-badge mastered">✓ Tuzatilgan: ${bank200Mastered} ta</span>` : ""}
+            </div>
+            <p class="mh-desc">Hozircha 200 savollik bazada adashgan savollaringiz yo‘q. Istalgan blokni yoki 70 ta noyob savolni yeching — xatolar avtomatik shu yerda to‘planadi!</p>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    panel.className = "mistakes-hub-panel has-mistakes";
+    panel.innerHTML = `
+      <div class="mh-top">
+        <div>
+          <div class="mh-title-row">
+            <h3>🛠 Xatolar ustida ishlash — Rasmiy 200 Baza</h3>
+            <span class="mh-badge">${total} ta xato savol</span>
+            ${bank200Mastered > 0 ? `<span class="mh-badge mastered">✓ Tuzatilgan: ${bank200Mastered} ta</span>` : ""}
+          </div>
+          <p class="mh-desc">200 savollik bazada adashgan savollaringiz shu yerda saqlandi. Ularni qayta to‘g‘ri topishingiz bilan avtomatik <strong>“O‘zlashtirildi”</strong> deb o‘chiriladi!</p>
+        </div>
+        <div class="mh-actions">
+          <button class="btn-danger-cta" onclick="App.startBank200MistakeDrill()">🛠 Xatolar ustida ishlash (${total} ta)</button>
+          <button class="ctrl-btn" onclick="App.openBank200MistakesModal()">📋 Xatolarni ko‘rish</button>
+          <button class="ctrl-btn ghost" onclick="App.clearBank200Mistakes()">🗑 Tozalash</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderBank200Dashboard() {
+    if (!bank200.length) return;
+    const totalChip = document.getElementById("b200-total-chip");
+    const uniqueChip = document.getElementById("b200-unique-chip");
+    const compChip = document.getElementById("b200-completed-chip");
+
+    const uniqueCount = bank200.filter(q => q.isUnique).length;
+    let completedBlocks = 0;
+    for (let b = 1; b <= 8; b++) {
+      if (bank200Scores[`block${b}`]) completedBlocks++;
+    }
+    if (totalChip) totalChip.textContent = bank200.length;
+    if (uniqueChip) uniqueChip.textContent = uniqueCount;
+    if (compChip) compChip.textContent = `${completedBlocks} / 8`;
+
+    renderBank200MistakesHub();
+
+    const grid = document.getElementById("bank200-blocks-grid");
+    if (grid) {
+      let html = "";
+      for (let b = 1; b <= 8; b++) {
+        const start = (b - 1) * 25;
+        const slice = bank200.slice(start, start + 25);
+        const counts = {};
+        slice.forEach(q => { counts[q.m] = (counts[q.m] || 0) + 1; });
+        const tags = ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8"]
+          .filter(m => counts[m] > 0)
+          .map(m => `<span class="vc-topic-tag">${m}: ${counts[m]}</span>`).join("");
+
+        const saved = bank200Scores[`block${b}`];
+        let statusHtml = `<span class="vc-status">Yechilmagan</span>`;
+        if (saved) {
+          const g = calcGrade(saved.best, slice.length);
+          statusHtml = `<span class="vc-status ${g.passed ? "passed" : "failed"}">${g.label} • ${saved.best}/${slice.length}</span>`;
+        }
+
+        const uniqInBlock = slice.filter(q => q.isUnique).length;
+        html += `
+          <div class="variant-card">
+            <div class="vc-head">
+              <div>
+                <div class="vc-num">${b}-Blok (${start + 1}–${start + slice.length})</div>
+                <div class="vc-sub">25 ta savol • ${uniqInBlock > 0 ? `${uniqInBlock} ta birinchi uchragan` : "Takrorlash bloki"}</div>
+              </div>
+              ${statusHtml}
+            </div>
+            <div class="vc-topics-bar">${tags}</div>
+            <div class="vc-actions">
+              <button class="btn-start" onclick="App.startBank200Block(${b})">Blokni Boshlash →</button>
+              <button class="btn-print-v" onclick="App.printBank200Block(${b}, false)" title="Kalitsiz chop etish">🖨</button>
+              <button class="btn-print-v" onclick="App.printBank200Block(${b}, true)" title="Kalit bilan chop etish">🔑</button>
+            </div>
+          </div>
+        `;
+      }
+      grid.innerHTML = html;
+    }
+
+    if (bank200Tab === "browse") {
+      renderBank200Browser();
+    }
+  }
+
+  function setBank200Tab(tab) {
+    bank200Tab = tab === "browse" ? "browse" : "blocks";
+    const tBlocks = document.getElementById("b200-tab-blocks");
+    const tBrowse = document.getElementById("b200-tab-browse");
+    const pBlocks = document.getElementById("bank200-blocks-pane");
+    const pBrowse = document.getElementById("bank200-browser-pane");
+    if (tBlocks) tBlocks.classList.toggle("active", bank200Tab === "blocks");
+    if (tBrowse) tBrowse.classList.toggle("active", bank200Tab === "browse");
+    if (pBlocks) pBlocks.style.display = bank200Tab === "blocks" ? "block" : "none";
+    if (pBrowse) pBrowse.style.display = bank200Tab === "browse" ? "block" : "none";
+    if (bank200Tab === "browse") renderBank200Browser();
+  }
+
+  function renderBank200Browser() {
+    const listEl = document.getElementById("bank200-browser-list");
+    if (!listEl) return;
+    const qStr = (document.getElementById("b200-search")?.value || "").trim().toLowerCase();
+    const modFilter = document.getElementById("b200-mod-filter")?.value || "ALL";
+    const onlyUnique = !!document.getElementById("b200-only-unique")?.checked;
+    const showAns = !!document.getElementById("b200-show-answers")?.checked;
+
+    const filtered = bank200.filter(item => {
+      if (onlyUnique && !item.isUnique) return false;
+      if (modFilter !== "ALL" && item.m !== modFilter) return false;
+      if (qStr) {
+        const hay = `#${item.id} ${item.id}. ${item.q} ${item.opts.join(" ")} ${item.exp} ${item.m}`.toLowerCase();
+        if (!hay.includes(qStr)) return false;
+      }
+      return true;
+    });
+
+    const countEl = document.getElementById("b200-browser-count");
+    if (countEl) countEl.textContent = `${filtered.length} / ${bank200.length} savol`;
+
+    if (!filtered.length) {
+      listEl.innerHTML = `<div class="search-empty">Qidiruv bo‘yicha savol topilmadi.</div>`;
+      return;
+    }
+
+    listEl.innerHTML = filtered.map(item => {
+      const mod = moduleMap[item.m] || { color: "#1B3B6F", code: item.m };
+      return `
+        <div class="b200-q-card">
+          <div class="b200-q-head">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span class="q-num-badge">#${item.id}-savol</span>
+              <span class="mod-badge" style="background:${mod.color}">${mod.code}</span>
+              ${item.isUnique ? `<span class="vc-topic-tag" style="color:var(--accent-gold);border-color:var(--accent-gold);">★ Asosiy</span>` : `<span class="vc-topic-tag">Takror (#${item.coreId})</span>`}
+            </div>
+            <button class="gloss-link" onclick="App.switchView('slides'); App.goToSlide(${item.slide - 1});">📖 ${item.slide}-slaydga o‘tish →</button>
+          </div>
+          <div class="b200-q-title">${item.id}. ${item.q}</div>
+          <div class="b200-opts-grid">
+            ${item.opts.map((o, idx) => `
+              <div class="b200-opt ${showAns && idx === item.ans ? "correct" : ""}">
+                <strong>${LETTERS[idx]})</strong> ${o} ${showAns && idx === item.ans ? " ✓" : ""}
+              </div>
+            `).join("")}
+          </div>
+          ${showAns ? `<div class="b200-exp"><strong>💡 To‘g‘ri javob (${LETTERS[item.ans]}):</strong> ${item.exp}</div>` : ""}
+        </div>
+      `;
+    }).join("");
+  }
+
+  function launchBank200Session({ title, subtitle, questions, scoreKey, minutes, isMistake = false }) {
+    mountRunnerTo("bank200");
+    isMistakeSession = isMistake;
+    mistakeSessionFixedCount = 0;
+    mistakeSessionSourceLabel = subtitle || title;
+
+    activeVariant = {
+      id: -200,
+      _scoreKey: scoreKey || null,
+      title,
+      subtitle,
+      questions
+    };
+
+    currentQIdx = 0;
+    userAnswers = new Array(questions.length).fill(null);
+    flaggedQs = new Set();
+    examFinished = false;
+    clearInterval(timerInterval);
+
+    document.getElementById("bank200-dashboard").style.display = "none";
+    document.getElementById("exam-results").style.display = "none";
+    document.getElementById("exam-runner").style.display = "block";
+
+    document.getElementById("runner-variant-title").textContent = title;
+    const modeBadge = document.getElementById("runner-mode-badge");
+    if (isMistake) {
+      modeBadge.textContent = "Tuzatish rejimi • Tezkor izoh";
+      modeBadge.className = "runner-mode-badge mistake-mode";
+    } else {
+      modeBadge.textContent = examMode === "instant" ? "⚡ Tezkor tekshiruv + Ko‘rsatma" : "🔒 Qat’iy imtihon";
+      modeBadge.className = "runner-mode-badge";
+    }
+
+    const timerEl = document.getElementById("runner-timer");
+    if (minutes && minutes > 0 && !isMistake) {
+      timerSeconds = minutes * 60;
+      timerEl.style.display = "inline-flex";
+      timerEl.classList.remove("urgent");
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        timerSeconds--;
+        updateTimerDisplay();
+        if (timerSeconds <= 0) {
+          clearInterval(timerInterval);
+          finishExam(true);
+        }
+      }, 1000);
+    } else {
+      timerEl.style.display = "none";
+    }
+
+    renderTopicDistInPalette();
+    renderQuestion();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function startBank200Block(blockNum) {
+    const start = (blockNum - 1) * 25;
+    const slice = bank200.slice(start, start + 25);
+    if (!slice.length) return;
+    lastBank200Launch = { type: "block", key: blockNum };
+    launchBank200Session({
+      title: `Rasmiy Baza — ${blockNum}-Blok (${start + 1}–${start + slice.length})`,
+      subtitle: `PDF to‘plam: ${start + 1}–${start + slice.length}-savollar`,
+      questions: slice,
+      scoreKey: `block${blockNum}`,
+      minutes: 30
+    });
+  }
+
+  function startBank200Special(modeKey) {
+    lastBank200Launch = { type: "special", key: modeKey };
+    if (modeKey === "unique70") {
+      const qs = bank200.filter(q => q.isUnique);
+      launchBank200Session({
+        title: `Noyob Asosiy Savollar (${qs.length} ta)`,
+        subtitle: "PDF bazasidagi takrorlanmaydigan barcha asosiy savollar",
+        questions: qs,
+        scoreKey: "unique70",
+        minutes: 60
+      });
+    } else if (modeKey === "random25") {
+      const pool = [...bank200.filter(q => q.isUnique)];
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      launchBank200Session({
+        title: "Tasodifiy 25 talik Imtihon (Rasmiy Baza)",
+        subtitle: "Noyob bazadan tasodifiy tanlangan 25 ta savol",
+        questions: pool.slice(0, 25),
+        scoreKey: null,
+        minutes: 30
+      });
+    } else if (modeKey === "all200") {
+      launchBank200Session({
+        title: "To‘liq 200 Savollik Marafon (1–200)",
+        subtitle: "PDF hujjatdagi barcha 1–200 savollar",
+        questions: [...bank200],
+        scoreKey: "all200",
+        minutes: 120
+      });
+    }
+  }
+
+  function retryActiveBank200() {
+    if (!lastBank200Launch) { confirmExitExam(); return; }
+    if (lastBank200Launch.type === "block") startBank200Block(lastBank200Launch.key);
+    else startBank200Special(lastBank200Launch.key);
+  }
+
+  function startBank200MistakeDrill() {
+    const list = getBank200MistakeList();
+    if (!list.length) {
+      alert("200 savollik bazada faol xato savollar yo‘q!");
+      return;
+    }
+    const qs = list.map(it => ({
+      ...bank200[it.qId - 1],
+      _prevWrong: it.lastWrong,
+      _wrongCount: it.wrongCount
+    }));
+    launchBank200Session({
+      title: `🛠 Xatolar ustida ishlash (Rasmiy Baza • ${qs.length} ta)`,
+      subtitle: "Rasmiy 200 Baza xatolari",
+      questions: qs,
+      scoreKey: null,
+      minutes: 0,
+      isMistake: true
+    });
+  }
+
+  function openBank200MistakesModal() {
+    const list = getBank200MistakeList();
+    const body = document.getElementById("mistakes-modal-body");
+    const startBtn = document.getElementById("btn-modal-start-mistakes");
+    if (startBtn) {
+      startBtn.style.display = list.length ? "inline-flex" : "none";
+      startBtn.onclick = () => { closeMistakesModal(); startBank200MistakeDrill(); };
+    }
+    if (!list.length) {
+      body.innerHTML = `<div class="search-empty">🎉 Rasmiy 200 savollik bazada xato savol yo‘q!</div>`;
+    } else {
+      body.innerHTML = `<div class="review-list">${list.map((it, i) => {
+        const q = bank200[it.qId - 1];
+        const wrongText = it.lastWrong === null || it.lastWrong === undefined
+          ? "<em>Belgilanmagan</em>"
+          : `<strong>${LETTERS[it.lastWrong]}.</strong> ${q.opts[it.lastWrong]}`;
+        return `
+          <div class="review-item r-bad">
+            <div class="review-q-head">
+              <span>${i + 1}. Rasmiy Baza • #${q.id}-savol • <strong>${q.m}</strong></span>
+              <span style="color:var(--danger)">${it.wrongCount} marta adashilgan</span>
+            </div>
+            <div class="review-q-text">${q.q}</div>
+            <div class="review-ans-line" style="color:var(--danger)">Oxirgi xato javobingiz: ${wrongText}</div>
+            <div class="review-ans-line" style="color:var(--success)">To‘g‘ri javob: <strong>${LETTERS[q.ans]}.</strong> ${q.opts[q.ans]}</div>
+            <div class="review-exp">
+              <strong>Professor izohi:</strong> ${q.exp}
+              <div style="margin-top:8px;">
+                <button class="gloss-link" onclick="App.closeMistakesModal(); App.switchView('slides'); App.goToSlide(${q.slide - 1});">📖 ${q.slide}-slaydga o‘tish (${q.m}) →</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("")}</div>`;
+    }
+    document.getElementById("mistakes-modal").classList.add("open");
+  }
+
+  function clearBank200Mistakes() {
+    const count = getBank200MistakeList().length;
+    if (!count) return;
+    if (!confirm(`Rasmiy 200 baza xatolar bankidagi barcha ${count} ta savolni tozalashni xohlaysizmi?`)) return;
+    bank200Mistakes = {};
+    persistBank200Mistakes();
+    renderBank200MistakesHub();
+  }
+
+  function buildBank200KeysTableHtml() {
+    let headerCols = `<th>№</th>`;
+    for (let b = 1; b <= 8; b++) {
+      headerCols += `<th>${(b - 1) * 25 + 1}–${b * 25}</th>`;
+    }
+    let rows = "";
+    for (let r = 0; r < 25; r++) {
+      rows += `<tr><td>${r + 1}</td>`;
+      for (let b = 0; b < 8; b++) {
+        const q = bank200[b * 25 + r];
+        rows += `<td><span style="font-size:10px;color:var(--ink-muted)">#${q.id}</span> <strong>${LETTERS[q.ans]}</strong></td>`;
+      }
+      rows += `</tr>`;
+    }
+    return `<div style="overflow-x:auto;"><table class="keys-table"><thead><tr>${headerCols}</tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+
+  function openBank200KeysModal() {
+    document.getElementById("bank200-keys-modal-body").innerHTML = buildBank200KeysTableHtml();
+    document.getElementById("bank200-keys-modal").classList.add("open");
+  }
+
+  function closeBank200KeysModal() {
+    document.getElementById("bank200-keys-modal").classList.remove("open");
+  }
+
+  function openBank200Question(qId) {
+    switchView("bank200");
+    setBank200Tab("browse");
+    const inp = document.getElementById("b200-search");
+    if (inp) inp.value = `#${qId}`;
+    const uniq = document.getElementById("b200-only-unique");
+    if (uniq) uniq.checked = false;
+    renderBank200Browser();
+  }
+
+  function printBank200Block(blockNum, includeKey = false) {
+    const start = (blockNum - 1) * 25;
+    const slice = bank200.slice(start, start + 25);
+    const qsHtml = slice.map(q => `
+      <div class="print-q">
+        <div class="print-q-title">${q.id}. [${q.m}] ${q.q}</div>
+        <div class="print-opts">
+          ${q.opts.map((o, j) => `<div><strong>${LETTERS[j]})</strong> ${o}${includeKey && j === q.ans ? " <strong>[✓]</strong>" : ""}</div>`).join("")}
+        </div>
+      </div>
+    `).join("");
+    const keyFooter = includeKey ? `
+      <div style="margin-top:12px;border-top:1px solid #000;padding-top:8px;font-size:10pt;">
+        <strong>JAVOBLAR KALITI (${start + 1}–${start + slice.length}):</strong>
+        ${slice.map(q => `${q.id}-${LETTERS[q.ans]}`).join(" • ")}
+      </div>
+    ` : "";
+    document.getElementById("print-area").innerHTML = `
+      <div class="print-exam-header">
+        <h2>“CYBER UNIVERSITY” DAVLAT UNIVERSITETI</h2>
+        <h3>FALSAFA — RASMIY TEST BAZASI (${blockNum}-BLOK: ${start + 1}–${start + slice.length}-SAVOLLAR)</h3>
+      </div>
+      ${qsHtml}
+      ${keyFooter}
+    `;
+    window.print();
+  }
+
+  function printBank200All(includeKey = true) {
+    const qsHtml = bank200.map(q => `
+      <div class="print-q">
+        <div class="print-q-title">${q.id}. [${q.m}] ${q.q}</div>
+        <div class="print-opts">
+          ${q.opts.map((o, j) => `<div><strong>${LETTERS[j]})</strong> ${o}${includeKey && j === q.ans ? " <strong>[✓]</strong>" : ""}</div>`).join("")}
+        </div>
+      </div>
+    `).join("");
+    document.getElementById("print-area").innerHTML = `
+      <div class="print-exam-header">
+        <h2>“CYBER UNIVERSITY” DAVLAT UNIVERSITETI</h2>
+        <h3>FALSAFA — RASMIY 200 SAVOLLIK TEST BAZASI (1–200)</h3>
+      </div>
+      ${qsHtml}
+      <div class="print-page-break"></div>
+      <div class="print-exam-header">
+        <h3>UMUMIY JAVOBLAR KALITI (1–200)</h3>
+      </div>
+      ${buildBank200KeysTableHtml()}
+    `;
+    window.print();
+  }
+
+  function printBank200MasterKey() {
+    document.getElementById("print-area").innerHTML = `
+      <div class="print-exam-header">
+        <h2>“CYBER UNIVERSITY” DAVLAT UNIVERSITETI</h2>
+        <h3>FALSAFA — RASMIY 200 SAVOLLIK TEST BAZASINING JAVOBLAR KALITI (1–200)</h3>
+      </div>
+      ${buildBank200KeysTableHtml()}
+    `;
+    window.print();
   }
 
   /* ==================== GLOSSARY (160 TERMS) & FLASHCARD STUDIO ==================== */
@@ -1533,6 +2143,18 @@ const App = (() => {
         });
       }
     });
+    bank200.forEach(b => {
+      if (!b.isUnique) return;
+      const hay = `#${b.id} ${b.q} ${b.opts.join(" ")} ${b.exp}`.toLowerCase();
+      if (hay.includes(q)) {
+        hits.push({
+          type: "200 BAZA",
+          title: `#${b.id}: ${b.q}`,
+          sub: `To‘g‘ri javob: ${LETTERS[b.ans]}) ${b.opts[b.ans]} • ${b.m}`,
+          action: `App.toggleSearchModal(); App.openBank200Question(${b.id});`
+        });
+      }
+    });
 
     if (!hits.length) {
       res.innerHTML = `<div class="search-empty">“${q}” bo‘yicha natija topilmadi.</div>`;
@@ -1665,7 +2287,7 @@ const App = (() => {
         else if (e.key.toLowerCase() === "g") toggleGridModal();
         else if (e.key.toLowerCase() === "f") toggleFullscreen();
         else if (e.key.toLowerCase() === "d") toggleTheme();
-      } else if (currentView === "exam" && activeVariant && !examFinished) {
+      } else if ((currentView === "exam" || currentView === "bank200") && activeVariant && !examFinished) {
         const k = e.key.toLowerCase();
         const optMap = { "1": 0, "a": 0, "2": 1, "b": 1, "3": 2, "c": 2, "4": 3, "d": 3 };
         if (k in optMap) {
@@ -1718,6 +2340,20 @@ const App = (() => {
     finishExam,
     openMasterKeyModal,
     closeMasterKeyModal,
+    setBank200Tab,
+    renderBank200Browser,
+    startBank200Block,
+    startBank200Special,
+    retryActiveBank200,
+    startBank200MistakeDrill,
+    openBank200MistakesModal,
+    clearBank200Mistakes,
+    openBank200KeysModal,
+    closeBank200KeysModal,
+    openBank200Question,
+    printBank200Block,
+    printBank200All,
+    printBank200MasterKey,
     renderGlossary,
     setGlossaryView,
     setGlossaryTopic,

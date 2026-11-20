@@ -1584,6 +1584,143 @@ html, body {
 }
 
 /* ==========================================================================
+   VIEW 2B: RASMIY 200 SAVOLLIK TEST BAZASI (PDF TO‘PLAM)
+   ========================================================================== */
+.b200-subnav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.b200-note-pill {
+  font-size: 12.2px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  padding: 6px 12px;
+  border-radius: 99px;
+}
+.b200-special-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.b200-special-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-top: 4px solid var(--accent-gold);
+  border-radius: 15px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow-sm);
+}
+.b200-special-card:nth-child(2) { border-top-color: var(--accent-navy); }
+.b200-special-card:nth-child(3) { border-top-color: var(--danger); }
+.b200-sp-kicker {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--accent-gold);
+}
+.b200-special-card h3 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  color: var(--ink-primary);
+  line-height: 1.18;
+}
+.b200-special-card p {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--ink-secondary);
+  line-height: 1.5;
+  flex: 1;
+}
+.b200-check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+.b200-check-label input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-navy);
+  cursor: pointer;
+}
+.b200-browser-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.b200-q-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 16px 20px;
+  box-shadow: var(--shadow-sm);
+}
+.b200-q-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.b200-q-title {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--ink-primary);
+  margin: 0 0 10px;
+  line-height: 1.45;
+}
+.b200-opts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.b200-opt {
+  padding: 8px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface-soft);
+  font-size: 13.3px;
+  color: var(--ink-secondary);
+}
+.b200-opt.correct {
+  background: var(--success-soft);
+  border-color: var(--success);
+  color: var(--ink-primary);
+  font-weight: 700;
+}
+.b200-exp {
+  margin-top: 10px;
+  padding: 9px 13px;
+  border-radius: 9px;
+  background: var(--accent-gold-soft);
+  border-left: 3px solid var(--accent-gold);
+  font-size: 12.8px;
+  color: var(--ink-primary);
+  line-height: 1.5;
+}
+@media (max-width: 960px) {
+  .b200-special-grid { grid-template-columns: 1fr; }
+  .b200-opts-grid { grid-template-columns: 1fr; }
+}
+
+/* ==========================================================================
    VIEW 3: GLOSSARY (160 TERMS) & INTERACTIVE FLASHCARD STUDIO
    ========================================================================== */
 .gloss-toolbar {

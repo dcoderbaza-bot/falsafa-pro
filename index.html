@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=4">
+  <link rel="stylesheet" href="css/styles.css?v=5">
 </head>
 <body>
   <!-- TOP NAVIGATION BAR -->
@@ -30,6 +30,11 @@
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         <span>Oraliq Nazorat</span>
         <span class="nav-pill accent">15 Variant</span>
+      </button>
+      <button class="nav-tab" data-view="bank200" onclick="App.switchView('bank200')">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></svg>
+        <span>Rasmiy Baza</span>
+        <span class="nav-pill" id="nav-bank200-count">200</span>
       </button>
       <button class="nav-tab" data-view="glossary" onclick="App.switchView('glossary')">
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -214,11 +219,13 @@
         </div>
       </div>
 
+      <!-- ACTIVE QUIZ RUNNER & RESULTS HOST -->
+      <div id="exam-runner-host">
       <!-- ACTIVE QUIZ RUNNER -->
       <div id="exam-runner" style="display:none;">
         <div class="runner-topbar">
           <div class="runner-left">
-            <button class="ctrl-btn ghost" onclick="App.confirmExitExam()">← Variantlarga qaytish</button>
+            <button class="ctrl-btn ghost" id="runner-exit-btn" onclick="App.confirmExitExam()">← Variantlarga qaytish</button>
             <div class="runner-title-group">
               <h2 id="runner-variant-title">1-Variant</h2>
               <span class="runner-mode-badge" id="runner-mode-badge">Imtihon rejimi</span>
@@ -267,6 +274,127 @@
       <div id="exam-results" style="display:none;">
         <!-- Rendered dynamically -->
       </div>
+      </div><!-- /#exam-runner-host -->
+    </div>
+  </main>
+
+  <!-- =========================================================
+       VIEW 2B: RASMIY 200 SAVOLLIK TEST BAZASI (PDF TO‘PLAM)
+  ========================================================== -->
+  <main id="view-bank200" class="view-section">
+    <div class="exam-container">
+      <div id="bank200-dashboard">
+        <div class="exam-hero-banner">
+          <div class="exam-hero-content">
+            <div class="hero-kicker">RASMIY TEST BAZASI • PDF TO‘PLAM (1–200)</div>
+            <h1>Falsafa Fanidan 200 Savollik Rasmiy Test Bazasi</h1>
+            <p>Yuklangan rasmiy PDF to‘plamdagi barcha <strong>200 ta savol</strong> (<code>#1–#200</code>) to‘liq kiritildi: <strong>8 ta 25-savollik blok</strong>, takrorlarsiz <strong>70 ta noyob asosiy savol</strong> rejimi, <strong>Tasodifiy 25 talik imtihon</strong>, darhol to‘g‘ri/noto‘g‘ri tekshiruv, Professor izohi va alohida <strong>Xatolar banki</strong> bilan!</p>
+            <div class="exam-hero-meta">
+              <div class="meta-chip"><strong id="b200-total-chip">200</strong> Jami savol</div>
+              <div class="meta-chip"><strong id="b200-unique-chip">70</strong> Noyob savol</div>
+              <div class="meta-chip"><strong>8 × 25</strong> Test bloklari</div>
+              <div class="meta-chip"><strong id="b200-completed-chip">0 / 8</strong> Blok yechilgan</div>
+            </div>
+          </div>
+          <div class="exam-hero-actions">
+            <button class="btn-gold" onclick="App.startBank200Special('unique70')">
+              ⭐ Noyob 70 Savolni Yechish
+            </button>
+            <button class="btn-secondary" onclick="App.openBank200KeysModal()">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+              200 Savol Kaliti (1–200)
+            </button>
+            <button class="btn-secondary" onclick="App.printBank200All(true)">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              200 Savolni Chop Etish / PDF
+            </button>
+          </div>
+        </div>
+
+        <!-- Mode Selector (synced with Exam Runner) -->
+        <div class="mode-selector-bar">
+          <div class="mode-info">
+            <strong>Tekshiruv rejimi:</strong>
+            <span id="bank200-mode-desc">⚡ Tezkor tekshiruv: kalitni bosishingiz bilan to‘g‘ri/noto‘g‘riligi, Professor izohi va slayd havolasi chiqadi.</span>
+          </div>
+          <div class="mode-pills">
+            <button class="mode-pill active" id="b200-mode-btn-instant" onclick="App.setExamMode('instant')">⚡ Tezkor tekshiruv + Ko‘rsatma</button>
+            <button class="mode-pill" id="b200-mode-btn-strict" onclick="App.setExamMode('strict')">🔒 Qat’iy imtihon (Yakunda)</button>
+          </div>
+        </div>
+
+        <!-- Dedicated Mistake Bank for 200-Q PDF Bank -->
+        <div id="bank200-mistakes-hub" class="mistakes-hub-panel"></div>
+
+        <!-- Sub-view Switcher: Test Blocks vs Full 200-Q Searchable Explorer -->
+        <div class="b200-subnav">
+          <div class="mode-pills">
+            <button class="mode-pill active" id="b200-tab-blocks" onclick="App.setBank200Tab('blocks')">🎯 Test Bloklari (8×25 + Maxsus)</button>
+            <button class="mode-pill" id="b200-tab-browse" onclick="App.setBank200Tab('browse')">📖 Barcha 200 Savol va Kalitlar (Qidiruv)</button>
+          </div>
+          <span class="b200-note-pill">ℹ️ PDFda 1–200 raqamlangan savollar 70 ta asosiy savoldan shakllantirilgan</span>
+        </div>
+
+        <!-- PANE A: Special Modes + 8×25 Blocks -->
+        <div id="bank200-blocks-pane">
+          <div class="b200-special-grid">
+            <div class="b200-special-card">
+              <div class="b200-sp-kicker">TAVSIYA ETILADI • TAKRORLARSIZ</div>
+              <h3>⭐ 70 ta Noyob Asosiy Savol</h3>
+              <p>PDF bazasidagi barcha takrorlanmaydigan 70 ta noyob savolni bir martada mukammal o‘zlashtiring.</p>
+              <button class="btn-gold small" onclick="App.startBank200Special('unique70')">Noyob 70 savolni boshlash →</button>
+            </div>
+            <div class="b200-special-card">
+              <div class="b200-sp-kicker">IMTIHON SIMULYATORI • 30 DAQIQA</div>
+              <h3>🎲 Tasodifiy 25 talik Imtihon</h3>
+              <p>Har safar noyob bazadan tasodifiy tanlangan 25 ta savol bilan haqiqiy imtihon mashqi.</p>
+              <button class="ctrl-btn primary" onclick="App.startBank200Special('random25')">Tasodifiy 25 savolni boshlash →</button>
+            </div>
+            <div class="b200-special-card">
+              <div class="b200-sp-kicker">TO‘LIQ PDF MARAFONI • 1–200</div>
+              <h3>🔥 To‘liq 200 Savollik Marafon</h3>
+              <p>PDF hujjatdagi barcha 1-savoldan 200-savolgacha ketma-ket to‘liq sinovdan o‘ting.</p>
+              <button class="ctrl-btn" onclick="App.startBank200Special('all200')">Barcha 200 savolni boshlash →</button>
+            </div>
+          </div>
+
+          <div class="variants-grid" id="bank200-blocks-grid"></div>
+        </div>
+
+        <!-- PANE B: Full 200-Q Searchable Explorer & Study Keys -->
+        <div id="bank200-browser-pane" style="display:none;">
+          <div class="gloss-toolbar">
+            <div class="gloss-toolbar-top">
+              <input type="text" id="b200-search" class="gloss-search-input" placeholder="Savol raqami (#48), matni, faylasuf yoki javob bo‘yicha qidiring... (masalan: Ksenofan, Forobiy, Ayniyat)" oninput="App.renderBank200Browser()">
+              <select id="b200-mod-filter" class="gloss-select" onchange="App.renderBank200Browser()">
+                <option value="ALL">Barcha mavzular (M1–M7)</option>
+                <option value="M1">M1: Falsafaning mohiyati</option>
+                <option value="M2">M2: Sharq falsafasi</option>
+                <option value="M3">M3: G‘arb falsafasi</option>
+                <option value="M4">M4: Borliq (Ontologiya)</option>
+                <option value="M5">M5: Rivojlanish (Dialektika)</option>
+                <option value="M6">M6: Bilish (Gnoseologiya)</option>
+                <option value="M7">M7: Mantiq</option>
+              </select>
+              <span class="gloss-count-pill" id="b200-browser-count">200 / 200 savol</span>
+            </div>
+            <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
+              <label class="b200-check-label">
+                <input type="checkbox" id="b200-only-unique" onchange="App.renderBank200Browser()">
+                <span>Faqat takrorlanmaydigan 70 ta noyob savolni ko‘rsatish</span>
+              </label>
+              <label class="b200-check-label">
+                <input type="checkbox" id="b200-show-answers" checked onchange="App.renderBank200Browser()">
+                <span>To‘g‘ri javob kaliti va Professor izohini ko‘rsatish</span>
+              </label>
+            </div>
+          </div>
+          <div class="b200-browser-list" id="bank200-browser-list"></div>
+        </div>
+      </div>
+
+      <!-- MOUNT POINT FOR SHARED RUNNER & RESULTS WHEN ACTIVE IN BANK200 -->
+      <div id="bank200-runner-host"></div>
     </div>
   </main>
 
@@ -382,16 +510,33 @@
     </div>
   </div>
 
+  <div class="modal-backdrop no-print" id="bank200-keys-modal" onclick="if(event.target===this) App.closeBank200KeysModal()">
+    <div class="modal-panel large">
+      <div class="modal-header">
+        <div>
+          <h3>Rasmiy 200 Savollik Test Bazasi — Umumiy Javoblar Kaliti (1–200)</h3>
+          <p>8 ta blok (1–25, 26–50, …, 176–200) bo‘yicha barcha to‘g‘ri javoblar kaliti</p>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="ctrl-btn primary" onclick="App.printBank200MasterKey()">🖨 Kalitni Chop Etish</button>
+          <button class="icon-btn" onclick="App.closeBank200KeysModal()">✕</button>
+        </div>
+      </div>
+      <div class="modal-body" id="bank200-keys-modal-body"></div>
+    </div>
+  </div>
+
   <!-- HIDDEN PRINT AREA (Populated dynamically for crisp university exam printing) -->
   <div id="print-area" class="print-only"></div>
 
   <!-- SCRIPTS (Classic scripts for 100% offline file:// and http:// compatibility) -->
-  <script src="js/slides_1_4.js?v=4"></script>
-  <script src="js/slides_5_8.js?v=4"></script>
-  <script src="js/glossary.js?v=4"></script>
-  <script src="js/tests_1_5.js?v=4"></script>
-  <script src="js/tests_6_10.js?v=4"></script>
-  <script src="js/tests_11_15.js?v=4"></script>
-  <script src="js/app.js?v=4"></script>
+  <script src="js/slides_1_4.js?v=5"></script>
+  <script src="js/slides_5_8.js?v=5"></script>
+  <script src="js/glossary.js?v=5"></script>
+  <script src="js/tests_1_5.js?v=5"></script>
+  <script src="js/tests_6_10.js?v=5"></script>
+  <script src="js/tests_11_15.js?v=5"></script>
+  <script src="js/pdf_bank_200.js?v=5"></script>
+  <script src="js/app.js?v=5"></script>
 </body>
 </html>
