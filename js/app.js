@@ -5,6 +5,16 @@
 
 const App = (() => {
   const LETTERS = ["A", "B", "C", "D"];
+  const MODULE_GUIDANCE = {
+    M1: "Ko‘rsatma: Falsafaning asosiy masalasi, strukturasi (Ontologiya/Gnoseologiya/Aksiologiya) va dunyoqarash shakllari (mif, din, fan) farqini 2–11-slaydlardan takrorlang.",
+    M2: "Ko‘rsatma: Sharq maktablari (Astika/Nastika, Konfutsiy/Lao Szi, Avesto), Sharq Renessansi allomalari, Tasavvuf va Jadidlar shiorlarini 12–22-slaydlardan ko‘zdan kechiring.",
+    M3: "Ko‘rsatma: Antik maktablar (Sokrat/Platon/Aristotel), Sxolastika (Okkam ustarasi), Empirizm vs Ratsionalizm, Nemis klassikasi va XX–XXI asr oqimlarini 23–33-slaydlarda qiyoslang.",
+    M4: "Ko‘rsatma: Borliq shakllari, Biosfera/Noosfera/Koevolyutsiya/Environmentalizm, Substrat–Substansiya–Materiya hamda Makon-vaqt konsepsiyalarini 34–43-slaydlardan mustahkamlang.",
+    M5: "Ko‘rsatma: Dialektikaning 3 qonuni (manba, mexanizm, yo‘nalish), 7 juft kategoriya, Sinergetika, Qizil siljish va P.K. Anoxin ilgarilovchi in’ikosini 44–53-slaydlarda takrorlang.",
+    M6: "Ko‘rsatma: Bilish yondashuvlari, hissiy/mantiqiy darajalar, haqiqat konsepsiyalari, yolg‘on vs yanglishish, Kumatoid/Keys-stadi/Abduksiya va Semiotikani 54–63-slaydlardan ko‘ring.",
+    M7: "Ko‘rsatma: Tafakkurning 4 qonuni, Eyler doiralari, Mantiqiy kvadrat (A-E-I-O), Chinlik jadvali, Sillogizm (Entimema/Sorit/Dilemma) va 8 ta Sofizmni 64–73-slaydlarda mashq qiling.",
+    M8: "Ko‘rsatma: Jamiyatning 4 sohasi, davlat shakllari, fuqarolik jamiyati, etnik birliklar, ijtimoiy himoya va 2023-yilgi Yangilangan Konstitutsiya normalarini 74–81-slaydlardan takrorlang."
+  };
   const STORAGE_KEY_SCORES = "falsafa_fal1404_scores_v1";
   const STORAGE_KEY_SLIDE = "falsafa_fal1404_last_slide_v1";
   const STORAGE_KEY_THEME = "falsafa_fal1404_theme_v1";
@@ -22,7 +32,7 @@ const App = (() => {
   let notesOpen = false;
 
   // Exam & Mistake Remediation state
-  let examMode = "exam"; // 'exam' | 'practice'
+  let examMode = "instant"; // 'instant' (default: immediate right/wrong + guidance + 30 min timer) | 'strict' (blind until end)
   let activeVariant = null;
   let isMistakeSession = false;
   let mistakeSessionSourceLabel = "";
@@ -551,12 +561,17 @@ const App = (() => {
 
   /* ==================== ORALIQ NAZORAT (EXAM CENTER) ==================== */
   function setExamMode(mode) {
-    examMode = mode;
-    document.getElementById("mode-btn-exam").classList.toggle("active", mode === "exam");
-    document.getElementById("mode-btn-practice").classList.toggle("active", mode === "practice");
-    document.getElementById("mode-desc-text").textContent = mode === "exam"
-      ? "Imtihon rejimi — 30 daqiqalik taymer, javoblar yakunda tekshiriladi va to‘liq tahlil ko‘rsatiladi."
-      : "Mashq rejimi — vaqt chegarasisiz, har bir savolga javob berganda professor izohi darhol ko‘rsatiladi.";
+    examMode = mode === "strict" ? "strict" : "instant";
+    const btnInstant = document.getElementById("mode-btn-instant");
+    const btnStrict = document.getElementById("mode-btn-strict");
+    if (btnInstant) btnInstant.classList.toggle("active", examMode === "instant");
+    if (btnStrict) btnStrict.classList.toggle("active", examMode === "strict");
+    const desc = document.getElementById("mode-desc-text");
+    if (desc) {
+      desc.textContent = examMode === "instant"
+        ? "Tezkor tekshiruv rejimi — kalitni belgilaganingizda to‘g‘ri/noto‘g‘riligi va Professor ko‘rsatmasi darhol chiqadi (30 daq taymer bilan)."
+        : "Qat’iy imtihon rejimi — 30 daqiqalik taymer; barcha javoblar, natija va ko‘rsatmalar test yakunlangandan so‘ng ochiladi.";
+    }
   }
 
   function calcGrade(score, total = 25) {
@@ -626,24 +641,22 @@ const App = (() => {
 
     document.getElementById("runner-variant-title").textContent = activeVariant.title;
     const modeBadge = document.getElementById("runner-mode-badge");
-    modeBadge.textContent = examMode === "exam" ? "Imtihon rejimi" : "Mashq rejimi (Tezkor izohli)";
+    modeBadge.textContent = examMode === "instant" ? "⚡ Tezkor tekshiruv + Ko‘rsatma" : "🔒 Qat’iy imtihon";
     modeBadge.className = "runner-mode-badge";
     const timerEl = document.getElementById("runner-timer");
-    timerEl.style.display = examMode === "exam" ? "inline-flex" : "none";
+    timerEl.style.display = "inline-flex";
     timerEl.classList.remove("urgent");
 
     clearInterval(timerInterval);
-    if (examMode === "exam") {
+    updateTimerDisplay();
+    timerInterval = setInterval(() => {
+      timerSeconds--;
       updateTimerDisplay();
-      timerInterval = setInterval(() => {
-        timerSeconds--;
-        updateTimerDisplay();
-        if (timerSeconds <= 0) {
-          clearInterval(timerInterval);
-          finishExam(true);
-        }
-      }, 1000);
-    }
+      if (timerSeconds <= 0) {
+        clearInterval(timerInterval);
+        finishExam(true);
+      }
+    }, 1000);
 
     renderTopicDistInPalette();
     renderQuestion();
@@ -676,7 +689,7 @@ const App = (() => {
     const q = activeVariant.questions[currentQIdx];
     const mod = moduleMap[q.m] || { code: q.m, title: "" };
     const answered = userAnswers[currentQIdx];
-    const instantFeedbackMode = isMistakeSession || examMode === "practice";
+    const instantFeedbackMode = isMistakeSession || examMode === "instant";
 
     document.getElementById("q-num-badge").textContent = isMistakeSession
       ? `${currentQIdx + 1} / ${activeVariant.questions.length} • ${q._vTitle} (#${q._qIdx + 1})`
@@ -696,17 +709,24 @@ const App = (() => {
     q.opts.forEach((optText, idx) => {
       const btn = document.createElement("button");
       btn.className = "q-opt";
+      let statusBadgeHtml = "";
       if (showInstant) {
         btn.disabled = true;
-        if (idx === q.ans) btn.classList.add("correct");
-        else if (idx === answered && answered !== q.ans) btn.classList.add("wrong");
+        if (idx === q.ans) {
+          btn.classList.add("correct");
+          statusBadgeHtml = `<span class="q-opt-status ok">✓ To‘g‘ri kalit</span>`;
+        } else if (idx === answered && answered !== q.ans) {
+          btn.classList.add("wrong");
+          statusBadgeHtml = `<span class="q-opt-status bad">✕ Xato tanlov</span>`;
+        }
       } else if (answered === idx) {
         btn.classList.add("selected");
       }
       btn.onclick = () => selectOption(idx);
       btn.innerHTML = `
         <span class="q-opt-letter">${LETTERS[idx]}</span>
-        <span>${optText}</span>
+        <span class="q-opt-text">${optText}</span>
+        ${statusBadgeHtml}
       `;
       optsBox.appendChild(btn);
     });
@@ -714,24 +734,48 @@ const App = (() => {
     const expBox = document.getElementById("q-explanation-box");
     if (showInstant) {
       const isRight = answered === q.ans;
-      let statusLine = isRight
-        ? "✓ To‘g‘ri javob!"
-        : `✕ Xato. To‘g‘ri javob: ${LETTERS[q.ans]}`;
+      const modTip = MODULE_GUIDANCE[q.m] || "";
+      let verdictTitle = isRight
+        ? "✓ TO‘G‘RI JAVOB! (+1 ball)"
+        : "✕ NOTO‘G‘RI JAVOB!";
+      let keySummary = isRight
+        ? `Siz tanlagan kalit: ${LETTERS[answered]} — To‘g‘ri`
+        : `Siz tanladingiz: ${LETTERS[answered]} • To‘g‘ri kalit: ${LETTERS[q.ans]}`;
+      let bankNote = isRight
+        ? `Tegishli mavzu: <strong>${mod.code} — ${mod.title}</strong>`
+        : `Ushbu savol qayta mashq uchun <strong>Xatolar Bankiga</strong> avtomatik qo‘shildi.`;
+
       if (isMistakeSession) {
-        statusLine = isRight
-          ? "✓ To‘g‘ri! Ushbu savol muvaffaqiyatli tuzatildi va Xatolar Bankidan o‘chirildi (O‘zlashtirildi!)"
-          : `✕ Yana adashdingiz (To‘g‘ri javob: ${LETTERS[q.ans]}). Savol qayta mashq uchun Xatolar Bankida saqlanib qoldi.`;
+        verdictTitle = isRight
+          ? "✓ XATO TUZATILDI! (O‘zlashtirildi)"
+          : "✕ YANA ADASHILDI — QAYTA O‘RGANING!";
+        bankNote = isRight
+          ? "Ajoyib! Bu savol Xatolar Bankidan muvaffaqiyatli o‘chirildi."
+          : (q._prevWrong !== null && q._prevWrong !== undefined
+            ? `Avvalgi xato tanlovingiz: <strong>${LETTERS[q._prevWrong]}</strong> (${q._wrongCount} marta adashilgan). Savol bankda saqlandi.`
+            : "Savol qayta mashq uchun Xatolar Bankida saqlanib qoldi.");
       }
+
+      expBox.className = `q-explanation-box ${isRight ? "fb-ok" : "fb-bad"}`;
       expBox.style.display = "block";
       expBox.innerHTML = `
-        <strong style="color:${isRight ? "var(--success)" : "var(--danger)"}">${statusLine}</strong><br>
-        <strong>Professor izohi:</strong> ${q.exp}
+        <div class="fb-verdict-row">
+          <div class="fb-verdict-title ${isRight ? "ok" : "bad"}">${verdictTitle}</div>
+          <span class="fb-key-pill">${keySummary}</span>
+        </div>
+        <div class="fb-guidance-card">
+          <span class="fb-guidance-label">💡 Professor ko‘rsatmasi va izohi</span>
+          <div><strong>Nima uchun ${LETTERS[q.ans]} to‘g‘ri?</strong> ${q.exp}</div>
+          ${!isRight && modTip ? `<div class="fb-tip-line">🧭 ${modTip}</div>` : ""}
+          ${isRight ? `<div class="fb-tip-line">⭐ Barakalla! Tushunchani aniq egalladingiz — keyingi savolga o‘tishingiz mumkin (<code>Enter</code> yoki <code>→</code>).</div>` : ""}
+        </div>
         <div class="mistake-prev-note">
-          <span>${isMistakeSession && q._prevWrong !== null && q._prevWrong !== undefined ? `Avvalgi xato tanlovingiz: <strong>${LETTERS[q._prevWrong]}</strong> (${q._wrongCount} marta adashilgan)` : `Tegishli mavzu: <strong>${mod.code} — ${mod.title}</strong>`}</span>
+          <span>${bankNote}</span>
           <button class="gloss-link" onclick="App.jumpToModuleSlide('${q.m}')">📖 ${q.m} slaydlarini ko‘rish →</button>
         </div>
       `;
     } else {
+      expBox.className = "q-explanation-box";
       expBox.style.display = "none";
     }
 
@@ -746,9 +790,20 @@ const App = (() => {
     }
 
     const totalAnswered = userAnswers.filter(x => x !== null).length;
-    document.getElementById("runner-answered-count").textContent = isMistakeSession
-      ? `${totalAnswered} / ${activeVariant.questions.length} • Tuzatildi: ${mistakeSessionFixedCount}`
-      : `${totalAnswered} / ${activeVariant.questions.length} javob`;
+    if (isMistakeSession) {
+      document.getElementById("runner-answered-count").textContent = `${totalAnswered} / ${activeVariant.questions.length} • Tuzatildi: ${mistakeSessionFixedCount}`;
+    } else if (instantFeedbackMode) {
+      let liveRight = 0, liveWrong = 0;
+      userAnswers.forEach((ua, i) => {
+        if (ua !== null) {
+          if (ua === activeVariant.questions[i].ans) liveRight++;
+          else liveWrong++;
+        }
+      });
+      document.getElementById("runner-answered-count").textContent = `✓ ${liveRight} • ✕ ${liveWrong} (${totalAnswered}/${activeVariant.questions.length})`;
+    } else {
+      document.getElementById("runner-answered-count").textContent = `${totalAnswered} / ${activeVariant.questions.length} javob`;
+    }
 
     renderPalette();
   }
@@ -756,7 +811,7 @@ const App = (() => {
   function renderPalette() {
     const pal = document.getElementById("q-palette-grid");
     pal.innerHTML = "";
-    const instantFeedbackMode = isMistakeSession || examMode === "practice";
+    const instantFeedbackMode = isMistakeSession || examMode === "instant";
     activeVariant.questions.forEach((q, idx) => {
       const btn = document.createElement("button");
       btn.className = "pal-btn";
@@ -776,7 +831,7 @@ const App = (() => {
   }
 
   function selectOption(optIdx) {
-    const instantFeedbackMode = isMistakeSession || examMode === "practice";
+    const instantFeedbackMode = isMistakeSession || examMode === "instant";
     if (instantFeedbackMode && userAnswers[currentQIdx] !== null) return;
     userAnswers[currentQIdx] = optIdx;
 
@@ -789,7 +844,7 @@ const App = (() => {
       } else {
         recordMistake(q._vId, q._qIdx, q.m, optIdx);
       }
-    } else if (examMode === "practice") {
+    } else if (examMode === "instant") {
       if (optIdx === q.ans) {
         markMistakeMastered(activeVariant.id, currentQIdx);
       } else {
@@ -854,7 +909,7 @@ const App = (() => {
       topicStats[m] = { right: 0, total: 0 };
     });
 
-    // Update Mistake Bank for exam mode (and any unanswered items in practice/mistake mode)
+    // Update Mistake Bank for strict mode (and any unanswered items in instant/mistake mode)
     activeVariant.questions.forEach((q, idx) => {
       topicStats[q.m].total++;
       const ua = userAnswers[idx];
@@ -862,11 +917,11 @@ const App = (() => {
       if (isRight) {
         score++;
         topicStats[q.m].right++;
-        if (!isMistakeSession && examMode === "exam") {
+        if (!isMistakeSession && examMode === "strict") {
           markMistakeMastered(activeVariant.id, idx);
         }
       } else {
-        if (!isMistakeSession && (examMode === "exam" || ua === null)) {
+        if (!isMistakeSession && (examMode === "strict" || ua === null)) {
           recordMistake(activeVariant.id, idx, q.m, ua);
         }
       }
@@ -1241,6 +1296,19 @@ const App = (() => {
         else if (e.key.toLowerCase() === "g") toggleGridModal();
         else if (e.key.toLowerCase() === "f") toggleFullscreen();
         else if (e.key.toLowerCase() === "d") toggleTheme();
+      } else if (currentView === "exam" && activeVariant && !examFinished) {
+        const k = e.key.toLowerCase();
+        const optMap = { "1": 0, "a": 0, "2": 1, "b": 1, "3": 2, "c": 2, "4": 3, "d": 3 };
+        if (k in optMap) {
+          e.preventDefault();
+          selectOption(optMap[k]);
+        } else if (e.key === "ArrowRight" || e.key === "Enter") {
+          e.preventDefault();
+          if (currentQIdx < activeVariant.questions.length - 1) nextQuestion();
+        } else if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          prevQuestion();
+        }
       } else if (e.key.toLowerCase() === "d") {
         toggleTheme();
       }

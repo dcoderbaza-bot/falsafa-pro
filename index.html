@@ -194,11 +194,11 @@
         <div class="mode-selector-bar">
           <div class="mode-info">
             <strong>Yechish rejimini tanlang:</strong>
-            <span id="mode-desc-text">Imtihon rejimi — 30 daqiqalik taymer, javoblar yakunda tekshiriladi va to‘liq tahlil ko‘rsatiladi.</span>
+            <span id="mode-desc-text">Tezkor tekshiruv rejimi — kalitni belgilaganingizda to‘g‘ri/noto‘g‘riligi va Professor ko‘rsatmasi darhol chiqadi (30 daq taymer bilan).</span>
           </div>
           <div class="mode-pills">
-            <button class="mode-pill active" id="mode-btn-exam" onclick="App.setExamMode('exam')">⏱ Imtihon rejimi</button>
-            <button class="mode-pill" id="mode-btn-practice" onclick="App.setExamMode('practice')">🎓 Mashq (Tezkor izohli)</button>
+            <button class="mode-pill active" id="mode-btn-instant" onclick="App.setExamMode('instant')">⚡ Tezkor tekshiruv + Ko‘rsatma</button>
+            <button class="mode-pill" id="mode-btn-strict" onclick="App.setExamMode('strict')">🔒 Qat’iy imtihon (Yakunda)</button>
           </div>
         </div>
 
@@ -252,6 +252,8 @@
             <div class="q-palette-grid" id="q-palette-grid"></div>
             <div class="palette-legend">
               <span><i class="dot current"></i> Joriy</span>
+              <span><i class="dot ok"></i> To‘g‘ri</span>
+              <span><i class="dot bad"></i> Xato</span>
               <span><i class="dot answered"></i> Belgilangan</span>
               <span><i class="dot flagged"></i> Tekshirishga</span>
             </div>

@@ -24,7 +24,7 @@
 
 ### 2. Oraliq Nazorat Markazi — 10 Variant × 25 Savol (250 Noyob Savol)
 * Har bir variant **M1–M8 barcha 8 ta mavzuni** mutanosib qamrab oladi (0 ta takrorlanuvchi savol).
-* **Imtihon rejimi** (30 daqiqa taymer, rasmiy 25 ballik baholash shkalasi: `5: 22–25`, `4: 18–21`, `3: 15–17`, `2: 0–14`) va **Mashq (Tezkor izohli) rejimi**.
+* **⚡ Tezkor tekshiruv + Professor ko‘rsatmasi (Standart rejim):** har bir savol kalitini belgilagandan so‘ng darhol to‘g‘ri/noto‘g‘riligi, to‘g‘ri kalit, batafsil **Professor izohi**, mavzu bo‘yicha ko‘rsatma va tegishli slaydga o‘tish tugmasi chiqadi (30 daqiqa taymer bilan). Istagan payt **🔒 Qat’iy imtihon (Natija yakunda)** rejimiga ham o‘tish mumkin.
 * **🛠 Xatolar ustida ishlash (Shaxsiy Xatolar Banki):**
   * Adashgan savollar avtomatik saqlanadi, mavzu (`M1–M8`) yoki variant bo‘yicha saralanadi.
   * To‘g‘ri topilgan savollar avtomatik **“O‘zlashtirildi”** deb belgilanib bankdan chiqariladi.
