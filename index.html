@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=3">
+  <link rel="stylesheet" href="css/styles.css?v=4">
 </head>
 <body>
   <!-- TOP NAVIGATION BAR -->
@@ -33,7 +33,8 @@
       </button>
       <button class="nav-tab" data-view="glossary" onclick="App.switchView('glossary')">
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        <span>Lug‘at & Kalitlar</span>
+        <span>Lug‘at &amp; Kalitlar</span>
+        <span class="nav-pill" id="nav-glossary-count">160</span>
       </button>
     </nav>
 
@@ -270,32 +271,54 @@
   </main>
 
   <!-- =========================================================
-       VIEW 3: GLOSSARY & QUICK STUDY REFERENCE
+       VIEW 3: ACADEMIC GLOSSARY (160 TERMS) & FLASHCARD STUDIO
   ========================================================== -->
   <main id="view-glossary" class="view-section">
     <div class="glossary-container">
-      <div class="glossary-header">
-        <div>
-          <div class="hero-kicker">PROFESSORNING AKADEMIK LUG‘ATI • M1–M8</div>
+      <div class="exam-hero-banner" style="margin-bottom:18px;">
+        <div class="exam-hero-content">
+          <div class="hero-kicker">PROFESSORNING MUKAMMAL AKADEMIK LUG‘ATI • M1–M8</div>
           <h1>Falsafiy Atamalar va Tushunchalar Xazinasi</h1>
-          <p>Oraliq nazoratda eng ko‘p uchraydigan asosiy falsafiy kategoriyalar, maktablar va atamalar izohi hamda tegishli slaydga tezkor o‘tish havolasi.</p>
+          <p>1-mavzudan 8-mavzugacha barcha <strong>160 ta fundamental atama</strong> (har mavzudan 20 tadan) — etimologiyasi, asosiy mutafakkirlari, chuqur ta’rifi, hayotiy misoli, slayd havolasi hamda <strong>Flesh-kartochka yodlash rejimi</strong> bilan!</p>
+          <div class="exam-hero-meta">
+            <div class="meta-chip"><strong id="gloss-total-chip">160</strong> Atama</div>
+            <div class="meta-chip"><strong>20×8</strong> Mavzu qamrovi</div>
+            <div class="meta-chip"><strong id="gloss-learned-chip">0 / 160</strong> Yodlangan</div>
+            <div class="meta-chip"><strong>Etimologiya + Misol</strong></div>
+          </div>
         </div>
-        <div class="glossary-search-wrap">
-          <input type="text" id="glossary-search" placeholder="Atama, faylasuf yoki tushunchani izlang..." oninput="App.renderGlossary()">
-          <select id="glossary-topic-filter" onchange="App.renderGlossary()">
-            <option value="ALL">Barcha mavzular (M1–M8)</option>
-            <option value="M1">M1: Falsafa mohiyati</option>
-            <option value="M2">M2: Sharq falsafasi</option>
-            <option value="M3">M3: G‘arb falsafasi</option>
-            <option value="M4">M4: Ontologiya</option>
-            <option value="M5">M5: Rivojlanish</option>
-            <option value="M6">M6: Bilish falsafasi</option>
-            <option value="M7">M7: Mantiq</option>
-            <option value="M8">M8: Jamiyat falsafasi</option>
-          </select>
+        <div class="exam-hero-actions">
+          <div class="mode-pills" style="background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.22);width:100%;">
+            <button class="mode-pill active" id="gloss-view-list" style="flex:1;" onclick="App.setGlossaryView('list')">📖 Lug‘at ro‘yxati</button>
+            <button class="mode-pill" id="gloss-view-cards" style="flex:1;" onclick="App.setGlossaryView('cards')">🃏 Flesh-kartochka</button>
+          </div>
+          <button class="btn-secondary" onclick="App.printGlossary()">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Lug‘atni Chop Etish / PDF
+          </button>
         </div>
       </div>
+
+      <!-- Glossary Toolbar: Search, Sort, Topic Chips & A-Z Filter -->
+      <div class="gloss-toolbar">
+        <div class="gloss-toolbar-top">
+          <input type="text" id="glossary-search" class="gloss-search-input" placeholder="Atama, etimologiya, faylasuf yoki misol bo‘yicha izlang... (masalan: Stoitsizm, Forobiy, Kumatoid, De Morgan)" oninput="App.renderGlossary()">
+          <select id="glossary-sort" class="gloss-select" onchange="App.renderGlossary()">
+            <option value="module">Tartib: Mavzu bo‘yicha (M1–M8)</option>
+            <option value="alpha">Tartib: Alifbo bo‘yicha (A–Z)</option>
+            <option value="unlearned">Tartib: Avval yodlanmaganlar</option>
+          </select>
+          <span class="gloss-count-pill" id="gloss-shown-count">160 / 160 atama</span>
+        </div>
+        <div class="gloss-topic-chips" id="gloss-topic-chips"></div>
+        <div class="gloss-alpha-bar" id="gloss-alpha-bar"></div>
+      </div>
+
+      <!-- MODE A: ENRICHED GLOSSARY CARDS GRID -->
       <div class="glossary-grid" id="glossary-grid"></div>
+
+      <!-- MODE B: INTERACTIVE FLASHCARD MASTERY STUDIO -->
+      <div id="glossary-flashcards" class="fc-studio" style="display:none;"></div>
     </div>
   </main>
 
@@ -363,12 +386,12 @@
   <div id="print-area" class="print-only"></div>
 
   <!-- SCRIPTS (Classic scripts for 100% offline file:// and http:// compatibility) -->
-  <script src="js/slides_1_4.js?v=3"></script>
-  <script src="js/slides_5_8.js?v=3"></script>
-  <script src="js/glossary.js?v=3"></script>
-  <script src="js/tests_1_5.js?v=3"></script>
-  <script src="js/tests_6_10.js?v=3"></script>
-  <script src="js/tests_11_15.js?v=3"></script>
-  <script src="js/app.js?v=3"></script>
+  <script src="js/slides_1_4.js?v=4"></script>
+  <script src="js/slides_5_8.js?v=4"></script>
+  <script src="js/glossary.js?v=4"></script>
+  <script src="js/tests_1_5.js?v=4"></script>
+  <script src="js/tests_6_10.js?v=4"></script>
+  <script src="js/tests_11_15.js?v=4"></script>
+  <script src="js/app.js?v=4"></script>
 </body>
 </html>

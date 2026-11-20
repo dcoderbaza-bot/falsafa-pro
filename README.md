@@ -31,8 +31,10 @@
   * Har bir xato savoldan to‘g‘ridan-to‘g‘ri tegishli ma’ruza slaydiga o‘tish imkoniyati.
 * **Chop etish va Word hujjat:** Barcha 15 variant + Umumiy javoblar kaliti (`Falsafa_Oraliq_Nazorat_15_Variant.docx`).
 
-### 3. Akademik Lug‘at — 88 ta Asosiy Falsafiy Atama
-* M1–M8 bo‘yicha tezkor qidiruv, mavzu filtri va har bir atamadan uning slaydiga bir bosishda o‘tish.
+### 3. Mukammal Akademik Lug‘at va Flesh-Kartochka Studiyasi — 160 ta Fundamental Atama (M1–M8 × 20)
+* Har bir mavzudan **20 tadan (jami 160 ta)** fundamental falsafiy atama: **etimologiya** (kelib chiqishi), **asosiy mutafakkirlar**, **chuqur akademik ta’rif**, **hayotiy/IT misoli** va **tegishli slayd havolasi** bilan.
+* **Kengaytirilgan qidiruv va filtrlash:** Mavzu chiplari (`M1–M8`), `A–Z` alifbo paneli, tartiblash (`Mavzu bo‘yicha`, `A–Z`, `Avval yodlanmaganlar`) va jonli izlash (atama, etimologiya, faylasuf yoki misol bo‘yicha).
+* **🃏 Interaktiv Flesh-kartochka rejimi:** Faol eslab qolish (active recall), kartalarni aralashtirish (`🔀`), **“✓ Yodladim”** progressini brauzerda saqlash, klaviatura boshqaruvi (`Space` / `←` / `→` / `Enter`) hamda **Lug‘atni chop etish / PDF** funksiyasi.
 
 ---
 
@@ -44,7 +46,7 @@
 ├── js/
 │   ├── slides_1_4.js                        # Kirish + M1–M4 slaydlari (1–43)
 │   ├── slides_5_8.js                        # M5–M8 + Yakun slaydlari (44–82)
-│   ├── glossary.js                          # 88 ta falsafiy atama lug‘ati
+│   ├── glossary.js                          # 160 ta mukammal atamali Akademik Lug‘at (M1–M8 × 20)
 │   ├── tests_1_5.js                         # 1–5-variantlar (125 ta noyob savol)
 │   ├── tests_6_10.js                        # 6–10-variantlar (125 ta noyob savol)
 │   ├── tests_11_15.js                       # 11–15-variantlar (125 ta noyob savol)

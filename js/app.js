@@ -1,6 +1,6 @@
 /* ==========================================================================
    FALSAFA (FAL1404/05) — INTERACTIVE APPLICATION ENGINE
-   Slides (82) + 10 Variants (250 Qs) + "Xatolar ustida ishlash" + Glossary (88)
+   Slides (82) + 15 Variants (375 Qs) + "Xatolar ustida ishlash" + Glossary (160) & Flashcards
    ========================================================================== */
 
 const App = (() => {
@@ -20,12 +20,22 @@ const App = (() => {
   const STORAGE_KEY_THEME = "falsafa_fal1404_theme_v1";
   const STORAGE_KEY_MISTAKES = "falsafa_fal1404_mistakes_v1";
   const STORAGE_KEY_MASTERED = "falsafa_fal1404_mastered_v1";
+  const STORAGE_KEY_GLOSS_LEARNED = "falsafa_fal1404_gloss_learned_v1";
 
   let slides = [];
   let modules = [];
   let moduleMap = {};
   let variants = [];
   let glossary = [];
+
+  // Glossary state
+  let glossaryViewMode = "list"; // 'list' | 'cards'
+  let glossaryTopicFilter = "ALL";
+  let glossaryAlphaFilter = "ALL";
+  let glossaryLearnedSet = new Set();
+  let fcDeck = [];
+  let fcIdx = 0;
+  let fcFlipped = false;
 
   let currentView = "slides";
   let currentSlideIdx = 0;
@@ -64,7 +74,7 @@ const App = (() => {
       ...(window.EXAM_VARIANTS_6_10 || []),
       ...(window.EXAM_VARIANTS_11_15 || [])
     ];
-    glossary = window.FALSAFA_GLOSSARY || [];
+    glossary = (window.FALSAFA_GLOSSARY || []).map((item, idx) => ({ ...item, _idx: idx }));
 
     // Restore persisted state
     try {
@@ -76,6 +86,8 @@ const App = (() => {
       if (mb) mistakeBank = JSON.parse(mb);
       const mc = parseInt(localStorage.getItem(STORAGE_KEY_MASTERED), 10);
       if (!isNaN(mc) && mc >= 0) masteredCount = mc;
+      const gl = localStorage.getItem(STORAGE_KEY_GLOSS_LEARNED);
+      if (gl) glossaryLearnedSet = new Set(JSON.parse(gl));
       const lastSlide = parseInt(localStorage.getItem(STORAGE_KEY_SLIDE), 10);
       if (!isNaN(lastSlide) && lastSlide >= 0 && lastSlide < slides.length) {
         currentSlideIdx = lastSlide;
@@ -84,6 +96,8 @@ const App = (() => {
 
     document.getElementById("nav-slide-count").textContent = slides.length;
     document.getElementById("total-slide-num").textContent = slides.length;
+    const navGloss = document.getElementById("nav-glossary-count");
+    if (navGloss) navGloss.textContent = glossary.length;
 
     renderSidebarModules();
     renderSlide();
@@ -173,6 +187,8 @@ const App = (() => {
     if (viewName === "exam" && !activeVariant) {
       renderMistakesHub();
       renderVariantsDashboard();
+    } else if (viewName === "glossary") {
+      renderGlossary();
     }
     window.scrollTo({ top: 0, behavior: "instant" });
   }
@@ -241,7 +257,7 @@ const App = (() => {
             Oraliq Nazorat Testlarini Boshlash (15 Variant) →
           </button>
           <button class="btn-secondary" onclick="App.switchView('glossary')">
-            Akademik Lug‘atni Ochish (88 atama)
+            Akademik Lug‘atni Ochish (160 atama)
           </button>
         </div>
       ` : "";
@@ -1088,40 +1104,391 @@ const App = (() => {
     return `<div style="overflow-x:auto;"><table class="keys-table"><thead><tr>${headerCols}</tr></thead><tbody>${rows}</tbody></table></div>`;
   }
 
-  /* ==================== GLOSSARY & GLOBAL SEARCH ==================== */
-  function renderGlossary() {
-    const query = (document.getElementById("glossary-search")?.value || "").trim().toLowerCase();
-    const filterMod = document.getElementById("glossary-topic-filter")?.value || "ALL";
-    const grid = document.getElementById("glossary-grid");
-    if (!grid) return;
+  /* ==================== GLOSSARY (160 TERMS) & FLASHCARD STUDIO ==================== */
+  function persistGlossaryLearned() {
+    try {
+      localStorage.setItem(STORAGE_KEY_GLOSS_LEARNED, JSON.stringify([...glossaryLearnedSet]));
+    } catch (_) {}
+  }
 
-    const filtered = glossary.filter(item => {
-      const modOk = filterMod === "ALL" || item.module === filterMod;
-      const qOk = !query || item.term.toLowerCase().includes(query) || item.def.toLowerCase().includes(query);
-      return modOk && qOk;
+  function getGlossaryLetter(term) {
+    const cleaned = (term || "").replace(/^[\s“”"«»'‘’(\-–—]+/, "");
+    const ch = cleaned.charAt(0).toUpperCase();
+    return /[A-Z]/.test(ch) ? ch : "#";
+  }
+
+  function getFilteredGlossary() {
+    const query = (document.getElementById("glossary-search")?.value || "").trim().toLowerCase();
+    const sortBy = document.getElementById("glossary-sort")?.value || "module";
+
+    const list = glossary.filter(item => {
+      if (glossaryTopicFilter !== "ALL" && item.module !== glossaryTopicFilter) return false;
+      if (glossaryAlphaFilter !== "ALL" && getGlossaryLetter(item.term) !== glossaryAlphaFilter) return false;
+      if (query) {
+        const hay = `${item.term} ${item.etym || ""} ${item.thinkers || ""} ${item.def || ""} ${item.example || ""} ${item.module}`.toLowerCase();
+        if (!hay.includes(query)) return false;
+      }
+      return true;
     });
 
+    if (sortBy === "alpha") {
+      list.sort((a, b) => a.term.replace(/^[\s“”"«»'‘’]+/, "").localeCompare(b.term.replace(/^[\s“”"«»'‘’]+/, ""), "uz"));
+    } else if (sortBy === "unlearned") {
+      list.sort((a, b) => {
+        const la = glossaryLearnedSet.has(a.term) ? 1 : 0;
+        const lb = glossaryLearnedSet.has(b.term) ? 1 : 0;
+        return la - lb || a._idx - b._idx;
+      });
+    } else {
+      list.sort((a, b) => a._idx - b._idx);
+    }
+
+    return list;
+  }
+
+  function renderGlossaryControls(shownCount) {
+    const totalChip = document.getElementById("gloss-total-chip");
+    const learnedChip = document.getElementById("gloss-learned-chip");
+    const shownPill = document.getElementById("gloss-shown-count");
+
+    const learnedCount = glossary.filter(g => glossaryLearnedSet.has(g.term)).length;
+    if (totalChip) totalChip.textContent = glossary.length;
+    if (learnedChip) learnedChip.textContent = `${learnedCount} / ${glossary.length}`;
+    if (shownPill) shownPill.textContent = `${shownCount} / ${glossary.length} atama`;
+
+    // Topic chips (ALL + M1..M8)
+    const chipsEl = document.getElementById("gloss-topic-chips");
+    if (chipsEl) {
+      const modOrder = ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8"];
+      const counts = {};
+      glossary.forEach(g => { counts[g.module] = (counts[g.module] || 0) + 1; });
+
+      let html = `<button class="gloss-chip ${glossaryTopicFilter === "ALL" ? "active" : ""}" onclick="App.setGlossaryTopic('ALL')">Barchasi (${glossary.length})</button>`;
+      modOrder.forEach(mId => {
+        const mod = moduleMap[mId];
+        const shortName = mod ? mod.title.split("—")[0].split(":")[0].trim() : mId;
+        const label = shortName.length > 22 ? shortName.slice(0, 20) + "…" : shortName;
+        html += `<button class="gloss-chip ${glossaryTopicFilter === mId ? "active" : ""}" onclick="App.setGlossaryTopic('${mId}')" title="${mod ? mod.title : mId}">${mId}: ${label} (${counts[mId] || 0})</button>`;
+      });
+      chipsEl.innerHTML = html;
+    }
+
+    // Alphabet A-Z bar (letters present across the glossary)
+    const alphaEl = document.getElementById("gloss-alpha-bar");
+    if (alphaEl) {
+      const letters = [...new Set(glossary.map(g => getGlossaryLetter(g.term)))].sort();
+      let html = `<button class="alpha-btn ${glossaryAlphaFilter === "ALL" ? "active" : ""}" onclick="App.setGlossaryAlpha('ALL')">A–Z</button>`;
+      letters.forEach(ch => {
+        html += `<button class="alpha-btn ${glossaryAlphaFilter === ch ? "active" : ""}" onclick="App.setGlossaryAlpha('${ch}')">${ch}</button>`;
+      });
+      alphaEl.innerHTML = html;
+    }
+  }
+
+  function renderGlossary() {
+    const grid = document.getElementById("glossary-grid");
+    const fcWrap = document.getElementById("glossary-flashcards");
+    if (!grid) return;
+
+    const filtered = getFilteredGlossary();
+    renderGlossaryControls(filtered.length);
+
+    if (glossaryViewMode === "cards") {
+      grid.style.display = "none";
+      if (fcWrap) fcWrap.style.display = "flex";
+      fcDeck = [...filtered];
+      if (fcIdx >= fcDeck.length) fcIdx = 0;
+      fcFlipped = false;
+      renderFlashcards();
+      return;
+    }
+
+    grid.style.display = "grid";
+    if (fcWrap) fcWrap.style.display = "none";
+
     if (!filtered.length) {
-      grid.innerHTML = `<div class="search-empty" style="grid-column:1/-1;">So‘rovingiz bo‘yicha atama topilmadi.</div>`;
+      grid.innerHTML = `
+        <div class="search-empty" style="grid-column:1/-1;">
+          <p style="margin:0 0 12px;">Tanlangan filtr yoki qidiruv bo‘yicha atama topilmadi.</p>
+          <button class="ctrl-btn primary" onclick="App.resetGlossaryFilters()">↺ Barcha filtrlarni tozalash</button>
+        </div>
+      `;
       return;
     }
 
     grid.innerHTML = filtered.map(item => {
       const mod = moduleMap[item.module] || { color: "#1B3B6F", code: item.module };
+      const isLearned = glossaryLearnedSet.has(item.term);
       return `
-        <div class="gloss-card">
+        <div class="gloss-card ${isLearned ? "learned" : ""}">
           <div class="gloss-head">
             <div class="gloss-term">${item.term}</div>
             <span class="mod-badge" style="background:${mod.color}">${mod.code}</span>
           </div>
+          <div class="gloss-meta-line">
+            ${item.etym ? `<span class="gloss-etym">🌐 ${item.etym}</span>` : ""}
+            ${item.thinkers ? `<span class="gloss-thinker">👤 ${item.thinkers}</span>` : ""}
+          </div>
           <p class="gloss-def">${item.def}</p>
+          ${item.example ? `<div class="gloss-example"><strong>💡 Misol:</strong> ${item.example}</div>` : ""}
           <div class="gloss-foot">
-            <span style="font-size:11.5px;color:var(--ink-muted);">Manba: ${item.slide}-slayd</span>
-            <button class="gloss-link" onclick="App.switchView('slides'); App.goToSlide(${item.slide - 1});">Slaydga o‘tish →</button>
+            <button class="gloss-learn-btn ${isLearned ? "done" : ""}" onclick="App.toggleGlossaryLearned(${item._idx})">
+              ${isLearned ? "✓ Yodlangan" : "○ Yodladim"}
+            </button>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:11.5px;color:var(--ink-muted);">${item.slide}-slayd</span>
+              <button class="gloss-link" onclick="App.switchView('slides'); App.goToSlide(${item.slide - 1});">Slaydga o‘tish →</button>
+            </div>
           </div>
         </div>
       `;
     }).join("");
+  }
+
+  function setGlossaryView(mode) {
+    glossaryViewMode = mode === "cards" ? "cards" : "list";
+    const btnList = document.getElementById("gloss-view-list");
+    const btnCards = document.getElementById("gloss-view-cards");
+    if (btnList) btnList.classList.toggle("active", glossaryViewMode === "list");
+    if (btnCards) btnCards.classList.toggle("active", glossaryViewMode === "cards");
+    fcIdx = 0;
+    fcFlipped = false;
+    renderGlossary();
+  }
+
+  function setGlossaryTopic(modId) {
+    glossaryTopicFilter = modId;
+    fcIdx = 0;
+    fcFlipped = false;
+    renderGlossary();
+  }
+
+  function setGlossaryAlpha(letter) {
+    glossaryAlphaFilter = letter;
+    fcIdx = 0;
+    fcFlipped = false;
+    renderGlossary();
+  }
+
+  function resetGlossaryFilters() {
+    glossaryTopicFilter = "ALL";
+    glossaryAlphaFilter = "ALL";
+    const inp = document.getElementById("glossary-search");
+    if (inp) inp.value = "";
+    const sort = document.getElementById("glossary-sort");
+    if (sort) sort.value = "module";
+    fcIdx = 0;
+    fcFlipped = false;
+    renderGlossary();
+  }
+
+  function toggleGlossaryLearned(idx) {
+    const item = glossary[idx];
+    if (!item) return;
+    if (glossaryLearnedSet.has(item.term)) {
+      glossaryLearnedSet.delete(item.term);
+    } else {
+      glossaryLearnedSet.add(item.term);
+    }
+    persistGlossaryLearned();
+    if (glossaryViewMode === "cards") {
+      const learnedCount = glossary.filter(g => glossaryLearnedSet.has(g.term)).length;
+      const learnedChip = document.getElementById("gloss-learned-chip");
+      if (learnedChip) learnedChip.textContent = `${learnedCount} / ${glossary.length}`;
+      renderFlashcards();
+    } else {
+      renderGlossary();
+    }
+  }
+
+  function openGlossaryTerm(idx) {
+    const item = glossary[idx];
+    if (!item) return;
+    glossaryTopicFilter = "ALL";
+    glossaryAlphaFilter = "ALL";
+    glossaryViewMode = "list";
+    const btnList = document.getElementById("gloss-view-list");
+    const btnCards = document.getElementById("gloss-view-cards");
+    if (btnList) btnList.classList.add("active");
+    if (btnCards) btnCards.classList.remove("active");
+    const inp = document.getElementById("glossary-search");
+    if (inp) inp.value = item.term;
+    switchView("glossary");
+  }
+
+  function renderFlashcards() {
+    const wrap = document.getElementById("glossary-flashcards");
+    if (!wrap) return;
+
+    if (!fcDeck.length) {
+      wrap.innerHTML = `
+        <div class="search-empty" style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:16px;">
+          <p style="margin:0 0 12px;">Tanlangan filtr bo‘yicha flesh-kartochka topilmadi.</p>
+          <button class="ctrl-btn primary" onclick="App.resetGlossaryFilters()">↺ Barcha filtrlarni tozalash</button>
+        </div>
+      `;
+      return;
+    }
+
+    const item = fcDeck[fcIdx];
+    const mod = moduleMap[item.module] || { color: "#1B3B6F", code: item.module, title: item.module };
+    const isLearned = glossaryLearnedSet.has(item.term);
+    const deckLearned = fcDeck.filter(g => glossaryLearnedSet.has(g.term)).length;
+    const pct = Math.round(((fcIdx + 1) / fcDeck.length) * 100);
+
+    const cardInner = !fcFlipped ? `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span class="mod-badge" style="background:${mod.color}">${mod.code} • ${mod.title}</span>
+        <span style="font-size:12px;font-weight:700;color:${isLearned ? "var(--success)" : "var(--ink-muted)"};">${isLearned ? "✓ Yodlangan" : "○ O‘rganilmoqda"}</span>
+      </div>
+      <div class="fc-front-center">
+        <div style="font-family:var(--font-mono);font-size:11.5px;font-weight:700;letter-spacing:0.08em;color:var(--accent-gold);text-transform:uppercase;">
+          ATAMANI TA’RIFLANG VA ESLANG
+        </div>
+        <h2>${item.term}</h2>
+        <div style="font-size:13px;color:var(--ink-muted);">Manba: ${item.slide}-slayd</div>
+      </div>
+      <div class="fc-flip-hint">👆 Javob, etimologiya va hayotiy misolni ko‘rish uchun kartani bosing (yoki <strong>Space</strong>)</div>
+    ` : `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span class="mod-badge" style="background:${mod.color}">${mod.code} • TA’RIF VA TAHLIL</span>
+        <button class="gloss-link" onclick="event.stopPropagation(); App.switchView('slides'); App.goToSlide(${item.slide - 1});">📖 ${item.slide}-slaydga o‘tish →</button>
+      </div>
+      <div class="fc-back-body">
+        <h3 class="fc-back-title">${item.term}</h3>
+        <div class="gloss-meta-line">
+          ${item.etym ? `<span class="gloss-etym">🌐 ${item.etym}</span>` : ""}
+          ${item.thinkers ? `<span class="gloss-thinker">👤 ${item.thinkers}</span>` : ""}
+        </div>
+        <p class="fc-back-def">${item.def}</p>
+        ${item.example ? `<div class="gloss-example"><strong>💡 Misol:</strong> ${item.example}</div>` : ""}
+      </div>
+      <div class="fc-flip-hint">👆 Old tomonga qaytarish uchun kartani bosing</div>
+    `;
+
+    wrap.innerHTML = `
+      <div class="fc-topbar">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <strong style="font-family:var(--font-mono);font-size:13.5px;">Karta ${fcIdx + 1} / ${fcDeck.length}</strong>
+          <span class="gloss-count-pill">To‘plamda yodlandi: ${deckLearned} / ${fcDeck.length}</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="ctrl-btn" onclick="App.shuffleFlashcards()">🔀 Aralashtirish</button>
+          <button class="ctrl-btn ghost" onclick="App.resetFlashcardIndex()">↺ Boshidan</button>
+        </div>
+      </div>
+      <div class="fc-progress-track"><div class="fc-progress-fill" style="width:${pct}%"></div></div>
+      <div class="fc-card ${fcFlipped ? "flipped" : ""}" id="fc-active-card" onclick="App.flipFlashcard()">
+        ${cardInner}
+      </div>
+      <div class="fc-controls">
+        <button class="ctrl-btn" onclick="App.prevFlashcard()" ${fcDeck.length <= 1 ? "disabled" : ""}>← Oldingi karta</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+          <button class="ctrl-btn" onclick="App.flipFlashcard()">🔄 ${fcFlipped ? "Old tomon" : "Javobni ko‘rish"}</button>
+          <button class="ctrl-btn ${isLearned ? "active-toggle" : "primary"}" onclick="App.markFlashcardLearned()">
+            ${isLearned ? "✓ Yodlangan (Bekor qilish)" : "✓ Yodladim va Keyingi →"}
+          </button>
+        </div>
+        <button class="ctrl-btn" onclick="App.nextFlashcard()" ${fcDeck.length <= 1 ? "disabled" : ""}>Keyingi karta →</button>
+      </div>
+      <div class="fc-shortcut-hint">
+        Klaviatura: <kbd>Space</kbd> Aylantirish • <kbd>←</kbd> <kbd>→</kbd> Oldingi / Keyingi • <kbd>Enter</kbd> Yodladim
+      </div>
+    `;
+  }
+
+  function flipFlashcard() {
+    if (!fcDeck.length) return;
+    fcFlipped = !fcFlipped;
+    renderFlashcards();
+  }
+
+  function nextFlashcard() {
+    if (fcDeck.length <= 1) return;
+    fcIdx = (fcIdx + 1) % fcDeck.length;
+    fcFlipped = false;
+    renderFlashcards();
+  }
+
+  function prevFlashcard() {
+    if (fcDeck.length <= 1) return;
+    fcIdx = (fcIdx - 1 + fcDeck.length) % fcDeck.length;
+    fcFlipped = false;
+    renderFlashcards();
+  }
+
+  function resetFlashcardIndex() {
+    fcIdx = 0;
+    fcFlipped = false;
+    renderFlashcards();
+  }
+
+  function shuffleFlashcards() {
+    for (let i = fcDeck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [fcDeck[i], fcDeck[j]] = [fcDeck[j], fcDeck[i]];
+    }
+    fcIdx = 0;
+    fcFlipped = false;
+    renderFlashcards();
+  }
+
+  function markFlashcardLearned() {
+    if (!fcDeck.length) return;
+    const item = fcDeck[fcIdx];
+    const wasLearned = glossaryLearnedSet.has(item.term);
+    if (wasLearned) {
+      glossaryLearnedSet.delete(item.term);
+    } else {
+      glossaryLearnedSet.add(item.term);
+      if (fcDeck.length > 1) {
+        fcIdx = (fcIdx + 1) % fcDeck.length;
+        fcFlipped = false;
+      }
+    }
+    persistGlossaryLearned();
+    const learnedCount = glossary.filter(g => glossaryLearnedSet.has(g.term)).length;
+    const learnedChip = document.getElementById("gloss-learned-chip");
+    if (learnedChip) learnedChip.textContent = `${learnedCount} / ${glossary.length}`;
+    renderFlashcards();
+  }
+
+  function printGlossary() {
+    const items = getFilteredGlossary();
+    const grouped = {};
+    items.forEach(item => {
+      if (!grouped[item.module]) grouped[item.module] = [];
+      grouped[item.module].push(item);
+    });
+
+    const modOrder = ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8"];
+    let bodyHtml = "";
+    let counter = 1;
+    modOrder.forEach(mId => {
+      const list = grouped[mId];
+      if (!list || !list.length) return;
+      const mod = moduleMap[mId] || { code: mId, title: mId };
+      bodyHtml += `<div class="print-gloss-group">${mod.code}: ${mod.title} (${list.length} ta atama)</div>`;
+      list.forEach(item => {
+        bodyHtml += `
+          <div class="print-gloss-item">
+            <div><strong>${counter++}. ${item.term}</strong> ${item.etym ? `<em>(${item.etym})</em>` : ""} — <span style="font-size:9.5pt;">[${item.slide}-slayd${item.thinkers ? ` • ${item.thinkers}` : ""}]</span></div>
+            <div>${item.def}</div>
+            ${item.example ? `<div style="font-size:9.5pt;margin-top:2px;"><strong>Misol:</strong> ${item.example}</div>` : ""}
+          </div>
+        `;
+      });
+    });
+
+    document.getElementById("print-area").innerHTML = `
+      <div class="print-exam-header">
+        <h2>“CYBER UNIVERSITY” DAVLAT UNIVERSITETI</h2>
+        <h3>FALSAFA (FAL1404/05) — AKADEMIK ATAMALAR LUG‘ATI (${items.length} TA ATAMA)</h3>
+        <div style="font-size:10pt;">1–8-mavzular • Etimologiya, mutafakkirlar, akademik ta’rif va hayotiy misollar bilan</div>
+      </div>
+      ${bodyHtml}
+    `;
+    window.print();
   }
 
   function toggleSearchModal() {
@@ -1156,12 +1523,13 @@ const App = (() => {
       }
     });
     glossary.forEach(g => {
-      if (g.term.toLowerCase().includes(q) || g.def.toLowerCase().includes(q)) {
+      const hay = `${g.term} ${g.etym || ""} ${g.thinkers || ""} ${g.def || ""} ${g.example || ""}`.toLowerCase();
+      if (hay.includes(q)) {
         hits.push({
           type: "LUG‘AT",
           title: `${g.term} (${g.module})`,
-          sub: g.def.slice(0, 120) + "…",
-          action: `App.toggleSearchModal(); App.switchView('slides'); App.goToSlide(${g.slide - 1});`
+          sub: `${g.etym ? g.etym + " — " : ""}${g.def.slice(0, 115)}…`,
+          action: `App.toggleSearchModal(); App.openGlossaryTerm(${g._idx});`
         });
       }
     });
@@ -1171,7 +1539,7 @@ const App = (() => {
       return;
     }
 
-    res.innerHTML = hits.slice(0, 24).map(h => `
+    res.innerHTML = hits.slice(0, 28).map(h => `
       <div class="search-hit" onclick="${h.action}">
         <strong><span style="color:var(--accent-gold);font-family:var(--font-mono);font-size:11px;margin-right:6px;">[${h.type}]</span>${h.title}</strong>
         <span>${h.sub}</span>
@@ -1310,6 +1678,12 @@ const App = (() => {
           e.preventDefault();
           prevQuestion();
         }
+      } else if (currentView === "glossary" && glossaryViewMode === "cards") {
+        if (e.key === " ") { e.preventDefault(); flipFlashcard(); }
+        else if (e.key === "ArrowRight") { e.preventDefault(); nextFlashcard(); }
+        else if (e.key === "ArrowLeft") { e.preventDefault(); prevFlashcard(); }
+        else if (e.key === "Enter") { e.preventDefault(); markFlashcardLearned(); }
+        else if (e.key.toLowerCase() === "d") toggleTheme();
       } else if (e.key.toLowerCase() === "d") {
         toggleTheme();
       }
@@ -1345,6 +1719,19 @@ const App = (() => {
     openMasterKeyModal,
     closeMasterKeyModal,
     renderGlossary,
+    setGlossaryView,
+    setGlossaryTopic,
+    setGlossaryAlpha,
+    resetGlossaryFilters,
+    toggleGlossaryLearned,
+    openGlossaryTerm,
+    flipFlashcard,
+    nextFlashcard,
+    prevFlashcard,
+    resetFlashcardIndex,
+    shuffleFlashcards,
+    markFlashcardLearned,
+    printGlossary,
     toggleSearchModal,
     runGlobalSearch,
     printVariantSheet,
