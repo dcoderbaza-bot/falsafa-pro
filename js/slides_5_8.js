@@ -1384,14 +1384,14 @@ window.SLIDES_PART_2 = [
     type: "hero",
     tag: "ORALIQ NAZORATGA TAYYORGARLIK • 1–8-MAVZULAR YAKUNI",
     title: "Tabriklayman! Siz Barcha 8 ta Mavzuni (82 Slayd) Muvaffaqiyatli O‘zlashtirdingiz",
-    lead: "Endi bilimingizni sinash va zaif nuqtalaringizni to‘liq bartaraf etish vaqti keldi. “Oraliq Nazorat” bo‘limida 10 ta noyob variant (250 ta savol), rasmiy 25 ballik baholash tizimi va aqlli “Xatolar ustida ishlash” trenajyori sizni kutmoqda.",
+    lead: "Endi bilimingizni sinash va zaif nuqtalaringizni to‘liq bartaraf etish vaqti keldi. “Oraliq Nazorat” bo‘limida 15 ta noyob variant (375 ta savol), tezkor Professor ko‘rsatmasi, rasmiy 25 ballik baholash tizimi va aqlli “Xatolar ustida ishlash” trenajyori sizni kutmoqda.",
     quote: "“Ilmni egallash — boshlanish; xatolar ustida ishlab uni mukammal tafakkurga aylantirish — chinakam donishmandlikdir.”",
     cite: "— Professorning yakuniy tilagi • Omad yor bo‘lsin!",
     stats: [
       { title: "M1 – M3 (32 Slayd)", desc: "Mohiyat, 5 tarixiy tip, Sharq Renessansi, Jadidlar, Antikdan XXI asr G‘arbgacha" },
       { title: "M4 – M5 (20 Slayd)", desc: "Ontologiya, Raqamli/Bio-ontologiya, Noosfera, Dialektika, Sinergetika, Qizil siljish, Anoxin" },
       { title: "M6 – M7 (20 Slayd)", desc: "Haqiqat, DIKW, Kumatoid/Keys-stadi/Abduksiya, Chinlik jadvali, 8 Sofizm, Sillogizm" },
-      { title: "M8 + Xatolar Banki", desc: "Jamiyat falsafasi, Konstitutsiya, Strategiya + 250 savol va “Xatolar ustida ishlash”" }
+      { title: "M8 + Xatolar Banki", desc: "Jamiyat falsafasi, Konstitutsiya, Strategiya + 375 savol (15 variant) va “Xatolar ustida ishlash”" }
     ],
     ctaExam: true,
     notes: "Talabalarga professor maslahati: avval birorta variantni topshiring, so‘ngra 'Xatolar ustida ishlash' tugmasini bosib, barcha adashgan savollaringizni 0 ta xato qolguncha qayta ishlang — shunda haqiqiy imtihonda 25/25 (5 baho) kafolatlanadi!"

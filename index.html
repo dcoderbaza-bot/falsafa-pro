@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=3">
 </head>
 <body>
   <!-- TOP NAVIGATION BAR -->
@@ -29,7 +29,7 @@
       <button class="nav-tab" data-view="exam" onclick="App.switchView('exam')">
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         <span>Oraliq Nazorat</span>
-        <span class="nav-pill accent">10 Variant</span>
+        <span class="nav-pill accent">15 Variant</span>
       </button>
       <button class="nav-tab" data-view="glossary" onclick="App.switchView('glossary')">
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -152,7 +152,7 @@
   </main>
 
   <!-- =========================================================
-       VIEW 2: ORALIQ NAZORAT — 10 VARIANTS × 25 QUESTIONS
+       VIEW 2: ORALIQ NAZORAT — 15 VARIANTS × 25 QUESTIONS
   ========================================================== -->
   <main id="view-exam" class="view-section">
     <div class="exam-container">
@@ -161,11 +161,11 @@
         <div class="exam-hero-banner">
           <div class="exam-hero-content">
             <div class="hero-kicker">ORALIQ NAZORAT MARKAZI • FAL1404/05 • 25% (25 BALL)</div>
-            <h1>10 ta Variantli Akademik Test Banki</h1>
-            <p>Har bir variant <strong>1-mavzudan 8-mavzugacha barcha 8 ta mavzuni</strong> mutanosib qamrab oluvchi <strong>25 ta takrorlanmas</strong> savoldan iborat (jami <strong>250 ta noyob test savoli</strong>). Har bir to‘g‘ri javob — 1 ball, maksimal natija — 25 ball.</p>
+            <h1>15 ta Variantli Akademik Test Banki</h1>
+            <p>Har bir variant <strong>1-mavzudan 8-mavzugacha barcha 8 ta mavzuni</strong> mutanosib qamrab oluvchi <strong>25 ta takrorlanmas</strong> savoldan iborat (jami <strong>375 ta noyob test savoli</strong>). Har bir to‘g‘ri javob — 1 ball, maksimal natija — 25 ball.</p>
             <div class="exam-hero-meta">
-              <div class="meta-chip"><strong>250</strong> Noyob savol</div>
-              <div class="meta-chip"><strong>10</strong> Variant (V1–V10)</div>
+              <div class="meta-chip"><strong>375</strong> Noyob savol</div>
+              <div class="meta-chip"><strong>15</strong> Variant (V1–V15)</div>
               <div class="meta-chip"><strong>8</strong> Mavzu (M1–M8)</div>
               <div class="meta-chip"><strong>30 daq</strong> Imtihon vaqti</div>
             </div>
@@ -173,11 +173,11 @@
           <div class="exam-hero-actions">
             <button class="btn-gold" onclick="App.openMasterKeyModal()">
               <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-              Barcha 10 Variant — Javoblar Kaliti
+              Barcha 15 Variant — Javoblar Kaliti
             </button>
             <button class="btn-secondary" onclick="App.printAllVariantsSheet()">
               <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-              Barcha 10 Variantni Chop Etish
+              Barcha 15 Variantni Chop Etish
             </button>
           </div>
         </div>
@@ -319,8 +319,8 @@
     <div class="modal-panel large">
       <div class="modal-header">
         <div>
-          <h3>Oraliq Nazorat — Barcha 10 Variantning Javoblar Kaliti</h3>
-          <p>250 ta savol (10 variant × 25 savol) • O‘qituvchi va o‘zini tekshirish uchun</p>
+          <h3>Oraliq Nazorat — Barcha 15 Variantning Javoblar Kaliti</h3>
+          <p>375 ta savol (15 variant × 25 savol) • O‘qituvchi va o‘zini tekshirish uchun</p>
         </div>
         <div style="display:flex; gap:8px;">
           <button class="ctrl-btn primary" onclick="App.printMasterKey()">🖨 Kalitni Chop Etish</button>
@@ -363,11 +363,12 @@
   <div id="print-area" class="print-only"></div>
 
   <!-- SCRIPTS (Classic scripts for 100% offline file:// and http:// compatibility) -->
-  <script src="js/slides_1_4.js"></script>
-  <script src="js/slides_5_8.js"></script>
-  <script src="js/glossary.js"></script>
-  <script src="js/tests_1_5.js"></script>
-  <script src="js/tests_6_10.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/slides_1_4.js?v=3"></script>
+  <script src="js/slides_5_8.js?v=3"></script>
+  <script src="js/glossary.js?v=3"></script>
+  <script src="js/tests_1_5.js?v=3"></script>
+  <script src="js/tests_6_10.js?v=3"></script>
+  <script src="js/tests_11_15.js?v=3"></script>
+  <script src="js/app.js?v=3"></script>
 </body>
 </html>

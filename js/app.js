@@ -61,7 +61,8 @@ const App = (() => {
     ];
     variants = [
       ...(window.EXAM_VARIANTS_1_5 || []),
-      ...(window.EXAM_VARIANTS_6_10 || [])
+      ...(window.EXAM_VARIANTS_6_10 || []),
+      ...(window.EXAM_VARIANTS_11_15 || [])
     ];
     glossary = window.FALSAFA_GLOSSARY || [];
 
@@ -237,7 +238,7 @@ const App = (() => {
       const ctaHtml = s.ctaExam ? `
         <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;">
           <button class="btn-gold" onclick="App.switchView('exam')">
-            Oraliq Nazorat Testlarini Boshlash (10 Variant) →
+            Oraliq Nazorat Testlarini Boshlash (15 Variant) →
           </button>
           <button class="btn-secondary" onclick="App.switchView('glossary')">
             Akademik Lug‘atni Ochish (88 atama)
@@ -1084,7 +1085,7 @@ const App = (() => {
       });
       rows += `</tr>`;
     }
-    return `<table class="keys-table"><thead><tr>${headerCols}</tr></thead><tbody>${rows}</tbody></table>`;
+    return `<div style="overflow-x:auto;"><table class="keys-table"><thead><tr>${headerCols}</tr></thead><tbody>${rows}</tbody></table></div>`;
   }
 
   /* ==================== GLOSSARY & GLOBAL SEARCH ==================== */
@@ -1227,7 +1228,7 @@ const App = (() => {
       <div>
         <div class="print-exam-header">
           <h2>“CYBER UNIVERSITY” DAVLAT UNIVERSITETI</h2>
-          <h3>FALSAFA (FAL1404/05) — BARCHA 10 VARIANTNING UMUMIY JAVOBLAR KALITI</h3>
+          <h3>FALSAFA (FAL1404/05) — BARCHA ${variants.length} VARIANTNING UMUMIY JAVOBLAR KALITI</h3>
         </div>
         ${buildMasterKeysTableHtml()}
       </div>
@@ -1241,7 +1242,7 @@ const App = (() => {
       <div>
         <div class="print-exam-header">
           <h2>“CYBER UNIVERSITY” DAVLAT UNIVERSITETI</h2>
-          <h3>FALSAFA (FAL1404/05) — BARCHA 10 VARIANTNING JAVOBLAR KALITI</h3>
+          <h3>FALSAFA (FAL1404/05) — BARCHA ${variants.length} VARIANTNING JAVOBLAR KALITI</h3>
         </div>
         ${buildMasterKeysTableHtml()}
       </div>

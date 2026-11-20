@@ -23,14 +23,14 @@ window.SLIDES_PART_1 = [
     type: "hero",
     tag: "“CYBER UNIVERSITY” DAVLAT UNIVERSITETI • 2026–2027 O‘QUV YILI",
     title: "FALSAFA: 1–8-Mavzular bo‘yicha Mukammal Ma’ruzalar Majmuasi",
-    lead: "O‘zbekiston Respublikasi Raqamli texnologiyalar vazirligi tizimidagi “Cyber University” davlat universiteti o‘quv dasturi (FAL1404/05) asosida tayyorlangan boyitilgan 82 slaydli akademik taqdimot va 10 variantli “Xatolar ustida ishlash” funksiyasiga ega oraliq nazorat tizimi.",
+    lead: "O‘zbekiston Respublikasi Raqamli texnologiyalar vazirligi tizimidagi “Cyber University” davlat universiteti o‘quv dasturi (FAL1404/05) asosida tayyorlangan boyitilgan 82 slaydli akademik taqdimot va 15 variantli “Xatolar ustida ishlash” funksiyasiga ega oraliq nazorat tizimi.",
     quote: "“Falsafa — bu hayratlanishdan boshlanuvchi, tanqidiy tafakkur orqali haqiqatga eltuvchi va insonni o‘z hayotining ma’nosini anglashga o‘rgatuvchi donishmandlik maktabidir.”",
     cite: "— Aristotel va Sharq-G‘arb mumtoz falsafiy an’anasi",
     stats: [
       { title: "8 ta Fundamental Mavzu", desc: "82 ta boyitilgan slayd: diagrammalar, qiyosiy jadvallar va IT/huquq keyslari" },
       { title: "4 ECTS Kredit (120 soat)", desc: "30 soat ma’ruza • 30 soat seminar • 60 soat mustaqil ta’lim" },
       { title: "Baholash tizimi (100%)", desc: "Joriy: 25% • Oraliq nazorat: 25% (25 ball) • Yakuniy: 50%" },
-      { title: "250 Savol + Xatolar Banki", desc: "10 ta variant, tezkor izoh va “Xatolar ustida ishlash” aqlli trenajyori" }
+      { title: "375 Savol + Xatolar Banki", desc: "15 ta variant, tezkor ko‘rsatma va “Xatolar ustida ishlash” aqlli trenajyori" }
     ],
     notes: "Assalomu alaykum, aziz talabalar! Ushbu boyitilgan 82 slaydli majmua “Cyber University” davlat universiteti o‘quv dasturi (tuzuvchilar: prof. Sh.N. Pulatov, dots. A.S. Abidjanov) asosida 1-mavzudan 8-mavzugacha barcha nazariy va amaliy mavzularni chuqur yoritadi. Klaviatura orqali o‘ng/chap tugmalar bilan slaydlarni almashtiring, 'N' bilan professor sharhini oching va 'Oraliq Nazorat' bo‘limida xatolar ustida ishlash tizimi yordamida 100% natijaga erishing!"
   },
